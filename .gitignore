@@ -1,3 +1,6 @@
 # Directories:
 bin
 lib
+
+# File extensions:
+*.jar
