@@ -22,7 +22,7 @@ public enum FrontendNotification {
 		new Thread() {
 
 			@Override
-			public void run() {
+			public synchronized void run() {
 				FrontendNotification.this.waitForFireAndHandleInterrupts();
 				p_task.run();
 			}
@@ -34,7 +34,7 @@ public enum FrontendNotification {
 		new Thread() {
 
 			@Override
-			public void run() {
+			public synchronized void run() {
 				FrontendNotification.this.waitForFireAndHandleInterrupts();
 				Platform.runLater(p_task);
 			}
