@@ -5,3 +5,6 @@ Initially *reborn* as part of my *college minor-project*, this is an app that'll
 This is the server-side app. For the client-side one, see [this page](https://github.com/Brahvim/Android-Game-Controller-Client)!
 
 For the legacy version of this app *(the server-app)*, see [AndroidGameControllerLegacy](https://github.com/Brahvim/AndroidGameControllerLegacy) and [AndroidGameControllerServerLegacy](https://github.com/Brahvim/AndroidGameControllerServerLegacy).
+
+Previously built with Processing, and the *UiBooster for Processing* Swing wrapper.
+Now being built directly with JavaFX.
