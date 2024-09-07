@@ -1,28 +1,24 @@
 package com.brahvim.agc.server.front;
 
 import javafx.beans.value.ChangeListener;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
-import javafx.stage.Screen;
-import javafx.stage.Stage;
 
 // No virtual calls.
 // ...*I hope.*
-class WaitingDialogBuilder {
 
-	static class Result {
-	}
+// ...Convenience?! Well, *at least I won't have extra class inheritance data!*
+final class WaitingDialogBuilder {
 
 	private WaitingDialogBuilder() {
 		throw new IllegalAccessError();
 	}
 
-	public static Dialog<WaitingDialogBuilder.Result> open(final Stage p_stage) {
-		final Dialog<WaitingDialogBuilder.Result> dialog = new Dialog<>();
+	public static Dialog<ButtonType> open() {
+		final Dialog<ButtonType> dialog = new Dialog<>();
 		final DialogPane dialogPane = dialog.getDialogPane();
 
 		WaitingDialogBuilder.addButtonsToPane(dialogPane);
@@ -33,17 +29,16 @@ class WaitingDialogBuilder {
 		dialog.setResizable(false);
 		dialog.setHeight(144);
 		dialog.setWidth(720);
-		dialog.show();
 
 		// Would've positioned dialog at the center of the screen *it was most on*...
 		// ...But we don't really need that in this scenario, do we?:
 
 		// Add a listener to the dialog's width and height properties
-		final ChangeListener<? super Number> dimensionalChangesListener = //
-				(observableValue, oldVal, newVal) -> WaitingDialogBuilder.sendDialogToCenter(dialog);
+		final ChangeListener<? super Number> dimensionalChangesListener //
+				= (p_observable, p_oldValue, p_newValue) -> WaitingDialogBuilder.sendDialogToCenter(dialog);
 
 		dialog.widthProperty().addListener(dimensionalChangesListener);
-		dialog.heightProperty().addListener(dimensionalChangesListener);
+		// dialog.heightProperty().addListener(dimensionalChangesListener);
 
 		// Setting the `x`-position before the `y`-position or using this combination of
 		// calls disallows the expected behavior:
@@ -55,7 +50,7 @@ class WaitingDialogBuilder {
 
 		// Platform.runLater(dialog::show);
 
-		// YES YES YES, this is *clearly* a race condition, and
+		// YES YES YES, this is *clearly* a race condition.
 		// `WaitingDialogBuilder::sendDialogToCenter()` exists for this reason.
 		// Attach that guy to the listeners like I did above.
 
@@ -63,17 +58,9 @@ class WaitingDialogBuilder {
 	}
 
 	private static void sendDialogToCenter(final Dialog<?> p_dialog) {
-		final Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
-
 		// I was using the `Stage` instance instead. Oops!:
-		final double dialogWidth = p_dialog.getWidth();
-		final double dialogHeight = p_dialog.getHeight();
-
-		final double screenWidth = screenBounds.getWidth();
-		final double screenHeight = screenBounds.getHeight();
-
-		p_dialog.setX((screenWidth - dialogWidth) / 2);
-		p_dialog.setY((screenHeight - dialogHeight) / 2);
+		p_dialog.setX((JavaFxApp.PRIMARY_SCREEN_RECT.getWidth() - p_dialog.getWidth()) / 2);
+		p_dialog.setY((JavaFxApp.PRIMARY_SCREEN_RECT.getHeight() - p_dialog.getHeight()) / 2);
 	}
 
 	private static void addButtonsToPane(final DialogPane p_pane) {

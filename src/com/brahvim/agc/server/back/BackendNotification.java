@@ -17,6 +17,21 @@ public enum BackendNotification {
 		this.notifyAll();
 	}
 
+	synchronized void doAsyncWhenFired(final Runnable p_task) {
+		final var thread = new Thread() {
+
+			@Override
+			public synchronized void run() {
+				BackendNotification.this.waitForFireAndHandleInterrupts();
+				p_task.run();
+			}
+
+		};
+
+		thread.setName(String.format("AGC:BE_ASYNC:%s", this.name()));
+		thread.start();
+	}
+
 	synchronized void waitForFireAndHandleInterrupts() {
 		try {
 			this.waitForFire();

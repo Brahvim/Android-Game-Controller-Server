@@ -18,8 +18,8 @@ public enum FrontendNotification {
 		this.notifyAll();
 	}
 
-	synchronized void doWhenFired(final Runnable p_task) {
-		new Thread() {
+	synchronized void doAsyncWhenFired(final Runnable p_task) {
+		final var thread = new Thread() {
 
 			@Override
 			public synchronized void run() {
@@ -27,11 +27,14 @@ public enum FrontendNotification {
 				p_task.run();
 			}
 
-		}.start();
+		};
+
+		thread.setName(String.format("AGC:UI_ASYNC:%s", this.name()));
+		thread.start();
 	}
 
 	synchronized void onUiThreadWhenFired(final Runnable p_task) {
-		new Thread() {
+		final var thread = new Thread() {
 
 			@Override
 			public synchronized void run() {
@@ -39,7 +42,10 @@ public enum FrontendNotification {
 				Platform.runLater(p_task);
 			}
 
-		}.start();
+		};
+
+		thread.setName(String.format("AGC:UI:%s", this.name()));
+		thread.start();
 	}
 
 	synchronized void waitForFireAndHandleInterrupts() {
