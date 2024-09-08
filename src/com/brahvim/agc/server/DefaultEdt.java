@@ -33,7 +33,6 @@ public class DefaultEdt {
 			final Event event;
 
 			synchronized (DefaultEdt.queueNoLongerEmptyNotifierLock) {
-
 				while (DefaultEdt.queue.isEmpty())
 					try {
 						DefaultEdt.queueNoLongerEmptyNotifierLock.wait();

@@ -1,7 +1,5 @@
 package com.brahvim.agc.server.test_event;
 
-import java.util.ArrayList;
-
 import com.brahvim.agc.server.Event;
 import com.brahvim.agc.server.EventHandler;
 import com.brahvim.agc.server.EventType;
@@ -9,27 +7,40 @@ import com.brahvim.agc.server.EventType;
 public class TestEvent implements Event {
 
 	public static final EventType TYPE = TestEvent::handle;
-	private static final ArrayList<EventHandler<TestEvent>> handlers = new ArrayList<>();
 
-	protected String message;
+	@SuppressWarnings("unchecked")
+	private static EventHandler<TestEvent>[] handlers = new EventHandler[0];
+
+	public final String message;
 
 	public TestEvent(final String p_message) {
 		this.message = p_message;
 	}
 
-	public static synchronized void registerHandler(final EventHandler<TestEvent> p_callback) {
-		TestEvent.handlers.add(p_callback);
+	@SuppressWarnings("unchecked")
+	public static void registerHandlers(final EventHandler<TestEvent>... p_callbacks) {
+		synchronized (TestEvent.handlers) {
+			final EventHandler<TestEvent>[] freshArray // Fresh out of RAM, which *is* as hot as ovens these days.
+					= new EventHandler[p_callbacks.length + TestEvent.handlers.length];
+
+			System.arraycopy(p_callbacks, 0, freshArray, TestEvent.handlers.length, p_callbacks.length);
+			TestEvent.handlers = freshArray;
+		}
 	}
 
-	private static synchronized void handle(final Event p_event) {
+	private static void handle(final Event p_event) {
 		if (p_event.getType() != TestEvent.TYPE)
 			return;
 
+		// Do note that casting here is still cheaper:
 		final TestEvent event = (TestEvent) p_event;
-		// System.out.println(event.message);
+		// ...Now the handlers won't have to do it themselves!
+		// The generics are helping.
 
-		for (final var h : TestEvent.handlers)
-			h.handle(event);
+		synchronized (TestEvent.handlers) {
+			for (final var h : TestEvent.handlers)
+				h.handle(event);
+		}
 	}
 
 	@Override

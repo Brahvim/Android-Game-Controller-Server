@@ -8,6 +8,7 @@ import javafx.application.Application;
 
 public class App {
 
+	@SuppressWarnings("unchecked")
 	public static void main(final String[] p_args) {
 		// PS Remember to *somehow get these arguments to the JVM* for JavaFX:
 		// `--module-path ./lib/openjfx --add-modules javafx.controls,javafx.fxml`
@@ -23,6 +24,8 @@ public class App {
 
 		thread.setName("AGC:FX_APP_LAUNCHER");
 		thread.start();
+
+		TestEvent.registerHandlers(p_event -> System.out.println(p_event.message));
 
 		new Thread() {
 
