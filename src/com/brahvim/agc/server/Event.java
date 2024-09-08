@@ -1,13 +1,8 @@
 package com.brahvim.agc.server;
 
+@FunctionalInterface
 public interface Event {
 
-	public static interface Type {
-
-		public void handle(final Event p_event);
-
-	}
-
-	public Event.Type getType();
+	public EventType getType();
 
 }

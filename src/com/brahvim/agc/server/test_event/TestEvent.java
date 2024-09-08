@@ -1,30 +1,15 @@
 package com.brahvim.agc.server.test_event;
 
+import java.util.ArrayList;
+
 import com.brahvim.agc.server.Event;
+import com.brahvim.agc.server.EventHandler;
+import com.brahvim.agc.server.EventType;
 
 public class TestEvent implements Event {
 
-	public static final class Type implements Event.Type {
-
-		@Override
-		public void handle(final Event p_event) {
-			// Slow!:
-			// if (!(p_event instanceof final TestEvent event))
-			// return;
-
-			// Slow enough to let me make this method a part of `TestEvent` instead!
-			// ...Then insert a reference to it and not call Event.Type::Type()` down there!
-
-			if (p_event.getType() != TestEvent.TYPE)
-				return;
-
-			final TestEvent event = (TestEvent) p_event;
-			System.out.println(event.message);
-		}
-
-	}
-
-	public static final Event.Type TYPE = new Type();
+	public static final EventType TYPE = TestEvent::handle;
+	private static final ArrayList<EventHandler<TestEvent>> handlers = new ArrayList<>();
 
 	protected String message;
 
@@ -32,8 +17,23 @@ public class TestEvent implements Event {
 		this.message = p_message;
 	}
 
+	public static synchronized void registerHandler(final EventHandler<TestEvent> p_callback) {
+		TestEvent.handlers.add(p_callback);
+	}
+
+	private static synchronized void handle(final Event p_event) {
+		if (p_event.getType() != TestEvent.TYPE)
+			return;
+
+		final TestEvent event = (TestEvent) p_event;
+		// System.out.println(event.message);
+
+		for (final var h : TestEvent.handlers)
+			h.handle(event);
+	}
+
 	@Override
-	public Event.Type getType() {
+	public EventType getType() {
 		return TestEvent.TYPE;
 	}
 
