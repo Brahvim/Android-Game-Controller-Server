@@ -8,8 +8,9 @@ import javafx.application.Application;
 public class App {
 
 	public static void main(final String[] p_args) {
-		// PS Remember to *somehow get these arguments to the JVM for JavaFX:
+		// PS Remember to *somehow get these arguments to the JVM* for JavaFX:
 		// `--module-path ./lib/openjfx --add-modules javafx.controls,javafx.fxml`
+		// (I don't really need the `javafx.fxml` module for this app, but anyway.)
 		final var thread = new Thread() {
 
 			@Override

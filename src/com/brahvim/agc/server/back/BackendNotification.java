@@ -3,6 +3,7 @@ package com.brahvim.agc.server.back;
 public enum BackendNotification {
 
 	START_BACKEND(),
+	CLIENT_JOINED(),
 	SHUTDOWN();
 
 	// region Class stuff.

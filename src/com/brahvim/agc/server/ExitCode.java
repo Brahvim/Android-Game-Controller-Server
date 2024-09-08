@@ -3,6 +3,10 @@ package com.brahvim.agc.server;
 public enum ExitCode {
 
 	OKAY(),
+
+	SSL_SOCKET_ACCEPT_PERMISSIONS(),
+	SSL_SOCKET_CREATION_PERMISSION(),
+
 	WELCOME_SOCKET_TIMEOUT(),
 	WELCOME_SOCKET_PORT_UNAVAILABLE(),
 
