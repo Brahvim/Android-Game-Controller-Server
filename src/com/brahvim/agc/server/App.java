@@ -2,6 +2,7 @@ package com.brahvim.agc.server;
 
 import com.brahvim.agc.server.back.Backend;
 import com.brahvim.agc.server.front.JavaFxApp;
+import com.brahvim.agc.server.test_event.TestEvent;
 
 import javafx.application.Application;
 
@@ -20,8 +21,28 @@ public class App {
 
 		};
 
-		thread.setName("AGC:JAVA_FX_APP");
+		thread.setName("AGC:FX_APP_LAUNCHER");
 		thread.start();
+
+		new Thread() {
+
+			@Override
+			public void run() {
+				for (int i = 0; i < 500; i++)
+					DefaultEdt.publish(new TestEvent("" + i));
+			}
+
+		}.start();
+
+		new Thread() {
+
+			@Override
+			public void run() {
+				for (int i = 0; i < 500; i++)
+					DefaultEdt.publish(new TestEvent("" + i));
+			}
+
+		}.start();
 
 		Backend.launch();
 	}
