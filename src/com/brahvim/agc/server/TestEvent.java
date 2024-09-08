@@ -1,8 +1,8 @@
-package com.brahvim.agc.server.test_event;
+package com.brahvim.agc.server;
 
-import com.brahvim.agc.server.Event;
-import com.brahvim.agc.server.EventHandler;
-import com.brahvim.agc.server.EventType;
+import com.brahvim.agc.server.event.Event;
+import com.brahvim.agc.server.event.EventHandler;
+import com.brahvim.agc.server.event.EventType;
 
 public class TestEvent implements Event {
 

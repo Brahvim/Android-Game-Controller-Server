@@ -1,4 +1,4 @@
-package com.brahvim.agc.server;
+package com.brahvim.agc.server.event;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;

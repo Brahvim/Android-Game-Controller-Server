@@ -1,4 +1,4 @@
-package com.brahvim.agc.server;
+package com.brahvim.agc.server.event;
 
 @FunctionalInterface
 public interface EventType {
