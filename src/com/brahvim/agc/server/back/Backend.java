@@ -2,8 +2,6 @@ package com.brahvim.agc.server.back;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.ArrayList;
 
 import javax.net.ssl.SSLServerSocketFactory;
 
@@ -15,7 +13,6 @@ public class Backend {
 
 	public static final EventDispatchThread EDT = new EventDispatchThread("BACKEND");
 
-	static ArrayList<Socket> clientSockets;
 	static ServerSocket welcomeSocket;
 	static Thread welcomeSocketThread;
 

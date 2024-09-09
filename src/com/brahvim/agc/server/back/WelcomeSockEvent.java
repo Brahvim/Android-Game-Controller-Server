@@ -21,6 +21,24 @@ public final class WelcomeSockEvent {
 		return new Event(WelcomeSockEvent.EVENT_TYPE);
 	}
 
+	private static void threadCallee() {
+		final var socket = Backend.welcomeSocket = Backend.createSslServerSocket();
+
+		try {
+			final Socket client = socket.accept();
+
+			// Compare against some blacklist here!
+			// client.getInetAddress().getHostAddress();
+
+			// Backend.clientSslSockets.add(client);
+		} catch (final IOException e) {
+			if (e instanceof SocketTimeoutException) // NOSONAR! Not again!
+				App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
+		} catch (final SecurityException e) {
+			App.exit(ExitCode.SSL_SOCKET_ACCEPT_PERMISSIONS);
+		}
+	}
+
 	private static void handle(final Event p_event) {
 		final var thread = Backend.welcomeSocketThread = new Thread(
 
@@ -32,24 +50,6 @@ public final class WelcomeSockEvent {
 
 		thread.start();
 		System.out.println("Welcome socket created.");
-	}
-
-	private static void threadCallee() {
-		final var socket = Backend.welcomeSocket = Backend.createSslServerSocket();
-
-		try {
-			final Socket client = socket.accept();
-
-			// Compare against some blacklist here!
-			// client.getInetAddress().getHostAddress();
-
-			Backend.clientSockets.add(client);
-		} catch (final IOException e) {
-			if (e instanceof SocketTimeoutException) // NOSONAR! Not again!
-				App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
-		} catch (final SecurityException e) {
-			App.exit(ExitCode.SSL_SOCKET_ACCEPT_PERMISSIONS);
-		}
 	}
 
 }
