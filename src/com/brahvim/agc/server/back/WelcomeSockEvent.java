@@ -1,46 +1,55 @@
 package com.brahvim.agc.server.back;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.brahvim.agc.server.App;
 import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.event.Event;
 import com.brahvim.agc.server.event.EventType;
 
-public class WelcomeSockEvent implements Event {
+public final class WelcomeSockEvent {
 
-	private static AtomicBoolean done = new AtomicBoolean();
-	public static final EventType TYPE = WelcomeSockEvent::handle;
+	public static final EventType EVENT_TYPE = WelcomeSockEvent::handle;
 
-	@Override
-	public EventType getType() {
-		return WelcomeSockEvent.TYPE;
+	private WelcomeSockEvent() {
+		throw new IllegalAccessError();
 	}
 
-	public static void handle(final Event p_event) {
-		WelcomeSockEvent.done.set(true);
-		final var socket = Backend.createSslServerSocket();
+	public static Event create() {
+		return new Event(WelcomeSockEvent.EVENT_TYPE);
+	}
 
-		final var thread = new Thread("AGC:WELCOME_SOCKET") {
+	private static void handle(final Event p_event) {
+		final var thread = Backend.welcomeSocketThread = new Thread(
 
-			@Override
-			public void run() {
-				try {
-					Backend.clientSockets.add(socket.accept());
-				} catch (final IOException e) {
-					if (e instanceof SocketTimeoutException) // NOSONAR! Not again!
-						App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
-				} catch (final SecurityException e) {
-					App.exit(ExitCode.SSL_SOCKET_ACCEPT_PERMISSIONS);
-				}
-			}
+				null,
+				WelcomeSockEvent::threadCallee,
+				"AGC:WELCOME_SOCKET"
 
-		};
+		);
 
 		thread.start();
 		System.out.println("Welcome socket created.");
+	}
+
+	private static void threadCallee() {
+		final var socket = Backend.welcomeSocket = Backend.createSslServerSocket();
+
+		try {
+			final Socket client = socket.accept();
+
+			// Compare against some blacklist here!
+			// client.getInetAddress().getHostAddress();
+
+			Backend.clientSockets.add(client);
+		} catch (final IOException e) {
+			if (e instanceof SocketTimeoutException) // NOSONAR! Not again!
+				App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
+		} catch (final SecurityException e) {
+			App.exit(ExitCode.SSL_SOCKET_ACCEPT_PERMISSIONS);
+		}
 	}
 
 }
