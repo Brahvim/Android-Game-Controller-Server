@@ -1,5 +1,8 @@
 package com.brahvim.agc.server.front;
 
+import com.brahvim.agc.server.App;
+import com.brahvim.agc.server.ExitCode;
+
 import javafx.beans.value.ChangeListener;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
@@ -73,7 +76,7 @@ final class WaitingDialogBuilder {
 		);
 
 		final Button btnCancel = (Button) p_pane.lookupButton(btnTypeCancel);
-		btnCancel.setOnAction(p_event -> System.exit(0));
+		btnCancel.setOnAction(p_event -> App.exit(ExitCode.OKAY));
 	}
 
 	// private static Button getButtonFromDialogPane(final DialogPane p_pane, final

@@ -5,7 +5,8 @@ import java.util.List;
 
 import com.brahvim.agc.server.App;
 import com.brahvim.agc.server.ExitCode;
-import com.brahvim.agc.server.back.BackendNotification;
+import com.brahvim.agc.server.back.WelcomeSockEvent;
+import com.brahvim.agc.server.event.DefaultEdt;
 
 import javafx.application.Application;
 import javafx.geometry.Rectangle2D;
@@ -27,6 +28,7 @@ public class JavaFxApp extends Application {
 
 	@Override
 	public void stop() throws Exception {
+		App.exit(ExitCode.OKAY);
 	}
 
 	@Override
@@ -103,8 +105,7 @@ public class JavaFxApp extends Application {
 		// p_stage.hide();
 		// dialog.show();
 
-		BackendNotification.START_BACKEND.fire();
-		System.out.println("Frontend now awaiting backend...");
+		DefaultEdt.publish(new WelcomeSockEvent());
 
 		// // This will run on the JavaFX thread.
 		// FrontendNotification.BACKEND_STARTED.onUiThreadWhenFired(() -> {

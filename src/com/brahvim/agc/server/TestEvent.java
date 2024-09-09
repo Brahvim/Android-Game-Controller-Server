@@ -22,24 +22,15 @@ public class TestEvent implements Event {
 		synchronized (TestEvent.handlers) {
 			final EventHandler<TestEvent>[] freshArray // Fresh out of RAM, which *is* as hot as ovens these days.
 					= new EventHandler[p_callbacks.length + TestEvent.handlers.length];
-
 			System.arraycopy(p_callbacks, 0, freshArray, TestEvent.handlers.length, p_callbacks.length);
 			TestEvent.handlers = freshArray;
 		}
 	}
 
 	private static void handle(final Event p_event) {
-		if (p_event.getType() != TestEvent.TYPE)
-			return;
-
-		// Do note that casting here is still cheaper:
-		final TestEvent event = (TestEvent) p_event;
-		// ...Now the handlers won't have to do it themselves!
-		// The generics are helping.
-
 		synchronized (TestEvent.handlers) {
 			for (final var h : TestEvent.handlers)
-				h.handle(event);
+				h.handle((TestEvent) p_event);
 		}
 	}
 

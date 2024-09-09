@@ -17,11 +17,9 @@ public class DefaultEdt {
 		throw new IllegalAccessError();
 	}
 
-	public static void publish(final Event p_event) {
-		if (p_event == null)
-			return;
-
-		DefaultEdt.queue.add(p_event);
+	public static void publish(final Event... p_events) {
+		for (final Event e : p_events)
+			DefaultEdt.queue.add(e);
 
 		synchronized (DefaultEdt.queueNoLongerEmptyNotifierLock) {
 			DefaultEdt.queueNoLongerEmptyNotifierLock.notifyAll();
