@@ -21,9 +21,9 @@ public final class App {
 
 		for (int i = 0; i < numClients; ++i) {
 			System.out.println(i);
-			final Integer client = Client.createClient();
+			final int client = Client.createClient();
 			Client.setUdpSocketThread(client, Thread.currentThread());
-			System.out.println(Client.getUdpSocketThread(client).getName());
+			System.out.println(Client.getUdpSocketThread(client)); // .getName());
 			clients[i] = client;
 		}
 
