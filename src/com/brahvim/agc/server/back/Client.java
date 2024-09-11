@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+// No, I'm not making this `AutoCloseable`! -v-
 public final class Client {
 
 	// region Fields.
@@ -107,7 +108,7 @@ public final class Client {
 		}
 	}
 
-	private static Integer createClient() {
+	private static synchronized Integer createClient() {
 		// synchronized (Client.waitForOtherCreateOrDestroy()) {
 		final Integer soaIndex = Client.socksUdp.size();
 		Integer id = Client.freeIndices.poll();
