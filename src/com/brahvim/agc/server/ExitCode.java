@@ -2,14 +2,23 @@ package com.brahvim.agc.server;
 
 public enum ExitCode {
 
-	OKAY(),
+	OKAY("User exited app."),
+	UNKNOWN("Unknown <:(..."),
 
-	SSL_SOCKET_ACCEPT_PERMISSIONS(),
-	SSL_SOCKET_CREATION_PERMISSION(),
+	SSL_SOCKET_CREATION_PERMISSION("SSL socket creation not allowed."),
+	SSL_SOCKET_ACCEPT_PERMISSION("SSL socket not allowed to accept connections."),
 
-	WELCOME_SOCKET_TIMEOUT(),
-	WELCOME_SOCKET_PORT_UNAVAILABLE(),
+	WELCOME_SOCKET_TIMEOUT("Welcome socket (SSL) timed out."),
+	WELCOME_SOCKET_PORT_UNAVAILABLE("Welcome socket (SSL) could not be started on assigned port."),
 
 	/*	*/ ;
+
+	public static final String errorMessagePrefix = "Exiting! Reason: ";
+
+	public final String errorMessage;
+
+	private ExitCode(final String p_errorMessage) {
+		this.errorMessage = p_errorMessage;
+	}
 
 }

@@ -1,12 +1,11 @@
 package com.brahvim.agc.server.front;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import com.brahvim.agc.server.App;
 import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.back.Backend;
-import com.brahvim.agc.server.back.WelcomeSockEvent;
+import com.brahvim.agc.server.back.EventAwaitOneClient;
 
 import javafx.application.Application;
 import javafx.geometry.Rectangle2D;
@@ -19,89 +18,122 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
+@SuppressWarnings("unused")
 public final class JavaFxApp extends Application {
 
+	// region Fields.
 	public static final Rectangle2D PRIMARY_SCREEN_RECT = Screen.getPrimary().getBounds();
 
+	private HBox row1 = null; // NOSONAR!
+	private VBox col1 = null; // NOSONAR!
+	private Stage stage = null; // NOSONAR!
+	private Scene scene = null; // NOSONAR!
+	private Pane paneRoot = null; // NOSONAR!
+	private Menu menuClick = null; // NOSONAR!
+	private MenuBar menuBar = null; // NOSONAR!
+	private Button buttonLetClientConnect = null; // NOSONAR!
+	private Button buttonShowClientDisplay = null; // NOSONAR!
+	private ListView<String> listViewClientList = null; // NOSONAR!
+	// NOSONAR, these are to be used *anywhere* in this class!
+	// endregion
+
 	@Override
-	public void stop() throws Exception {
+	public void stop() {
 		App.exit(ExitCode.OKAY);
 	}
 
 	@Override
-	public void start(final Stage p_stage) throws Exception {
-		final Button closeButton = new Button("Press to close.");
-		this.initCloseButton(closeButton);
+	public void start(final Stage p_stage) {
+		final var localStage = this.stage = p_stage;
 
-		final var clientsList = new ListView<String>(); // Only one selection by default. Phew!
-		final var row1 = new HBox(clientsList, closeButton);
-		final var rootPane = new VBox(new MenuBar(
+		final var localButtonShowClientDisplay
+		/* */ = this.buttonShowClientDisplay
+		/* */ /* */ = new Button("Press to show client controls screen.");
 
-				new Menu("Click!")
+		final var localButtonLetClientConnect
+		/* */ = this.buttonLetClientConnect
+		/* */ /* */ = new Button("Await a client.");
 
-		), row1);
+		final var localListViewClientList = this.listViewClientList = new ListView<>();
+		final var localCol1 = this.col1 = new VBox(localButtonShowClientDisplay, localButtonLetClientConnect);
+		final var localRow1 = this.row1 = new HBox(localListViewClientList, localCol1);
 
-		final List<String> fakeData = new ArrayList<>();
-		this.createFakeData(fakeData);
-		this.initClientList(clientsList, fakeData);
+		final var localPaneRoot = this.paneRoot = new VBox(localRow1);
 
-		p_stage.heightProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
+		final var localMenuClick = this.menuClick = new Menu("Click!");
+		final var localMenuBar = this.menuBar = new MenuBar(localMenuClick);
+
+		localListViewClientList.getItems().addAll(this.createFakeData()); // Can't pass to constructor. Weird.
+
+		localStage.widthProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
+			final double width = p_newValue.doubleValue();
+			localListViewClientList.setPrefWidth(width - (width / 1.5));
+		});
+
+		localStage.heightProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
 			final double height = p_newValue.doubleValue();
-			clientsList.setPrefHeight(height - (height / 4));
+			localListViewClientList.setPrefHeight(height - (height / 6));
 		});
-		p_stage.setScene(new Scene(rootPane));
-		this.initStage(p_stage);
-		p_stage.show();
 
-		Backend.EDT.publish(WelcomeSockEvent.create());
+		final var localScene = this.scene = new Scene(localPaneRoot);
+		localStage.setScene(localScene);
+		localScene.setFill(Color.BLACK);
+
+		this.initStage();
+		this.initClientList();
+		this.initControlDisplayButton();
+		this.initLetClientConnectButton();
+
+		localStage.show();
 	}
 
-	private void initStage(final Stage p_stage) {
+	private void initStage() {
+		final double screenHeight = JavaFxApp.PRIMARY_SCREEN_RECT.getHeight();
+		final double screenWidth = JavaFxApp.PRIMARY_SCREEN_RECT.getWidth();
+		final double height = screenHeight / 2;
+		final double width = screenWidth / 2;
+
 		// final var dialog = WaitingDialogBuilder.open();
-		p_stage.setTitle("AndroidGameController - Home");
-		// p_stage.initStyle(StageStyle.TRANSPARENT);
-		p_stage.setResizable(true);
-		p_stage.setMinHeight(240);
-		p_stage.setMinWidth(480);
-		p_stage.setHeight(240);
-		p_stage.setWidth(480);
+		this.stage.setTitle("AndroidGameController - Home");
+		// this.stage.initStyle(StageStyle.TRANSPARENT);
+		this.stage.setResizable(true);
 
-		p_stage.widthProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
-			p_stage.setX((JavaFxApp.PRIMARY_SCREEN_RECT.getWidth() - p_stage.getWidth()) / 2);
-			p_stage.setY((JavaFxApp.PRIMARY_SCREEN_RECT.getHeight() - p_stage.getHeight()) / 2);
-		});
+		this.stage.setMinHeight(height);
+		this.stage.setMinWidth(width);
+		this.stage.setHeight(height);
+		this.stage.setWidth(width);
+
+		// this.stage.widthProperty().addListener((p_observable, p_oldValue, p_newValue)
+		// -> {
+		this.stage.setX((screenWidth - this.stage.getWidth()) / 2);
+		this.stage.setY((screenHeight - this.stage.getHeight()) / 2);
+		// });
 	}
 
-	private void initCloseButton(final Button p_button) {
-		p_button.setOnAction(p_event -> {
-			System.out.println("Button press detected.");
-			App.exit(ExitCode.OKAY);
-		});
-	}
-
-	private void createFakeData(final List<String> p_list) {
-		for (int i = 0; i < 20; i++)
-			p_list.add("Client " + (Double.hashCode(i)));
-	}
-
-	private void initClientList(final ListView<String> p_listView, final List<String> p_dataList) {
-		p_listView.getItems().addAll(p_dataList);
-		p_listView.setOnKeyPressed(p_keyEvent -> {
+	private void initClientList() {
+		this.listViewClientList.setOnKeyPressed(p_keyEvent -> {
 			// System.out.println("Key pressed with list-view in focus!");
 			switch (p_keyEvent.getCode()) {
-				case DELETE -> p_listView.getItems().removeAll(p_listView.getSelectionModel().getSelectedItems());
+
+				case DELETE ->
+					this.listViewClientList.getItems()
+							.removeAll(this.listViewClientList.getSelectionModel().getSelectedItems());
+
 				default -> {
 					//
 				}
+
 			}
 		});
 
-		p_listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-		p_listView.setCellFactory(p_toGenFor -> new ListCell<String>() {
+		this.listViewClientList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		this.listViewClientList.setCellFactory(p_toGenFor -> new ListCell<String>() {
 
 			@Override
 			protected void updateItem(final String p_item, final boolean p_isEmpty) {
@@ -122,6 +154,39 @@ public final class JavaFxApp extends Application {
 		// clientsList.getSelectionModel().selectedItemProperty().addListener(
 		// (p_observable, p_oldValue, p_newValue) ->
 		// System.out.printf("Item `%s` selected!%n", p_newValue));
+	}
+
+	private void initControlDisplayButton() {
+		final Button button = this.buttonShowClientDisplay;
+
+		this.scene.widthProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
+			final double sceneWidth = p_newValue.doubleValue();
+			button.setTranslateX(sceneWidth / 2);
+		});
+
+		this.scene.heightProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
+			final double sceneHeight = p_newValue.doubleValue();
+			button.setTranslateY(sceneHeight / 2);
+		});
+
+		button.setOnAction(p_event -> {
+			System.out.println("Controls button pressed for client" + ".");
+		});
+	}
+
+	private void initLetClientConnectButton() {
+		this.buttonLetClientConnect.setOnAction(p_event -> {
+			Backend.EDT.publish(EventAwaitOneClient.create());
+		});
+	}
+
+	private ArrayList<String> createFakeData() {
+		final ArrayList<String> toRet = new ArrayList<>();
+
+		for (int i = 0; i < 20; i++)
+			toRet.add("Client " + (Double.hashCode(i)));
+
+		return toRet;
 	}
 
 }
