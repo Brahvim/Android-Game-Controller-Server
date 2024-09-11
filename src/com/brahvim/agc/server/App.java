@@ -17,18 +17,18 @@ public final class App {
 		// (I don't really need the `javafx.fxml` module for this app, but anyway.)
 
 		final int numClients = 50_000;
-		final Integer[] clients = new Integer[numClients];
+		final Client[] clients = new Client[numClients];
 
 		for (int i = 0; i < numClients; ++i) {
 			System.out.println(i);
-			final int client = Client.createClient();
-			Client.setUdpSocketThread(client, Thread.currentThread());
-			System.out.println(Client.getUdpSocketThread(client)); // .getName());
+			final Client client = new Client();
+			client.setUdpSocketThread(Thread.currentThread());
+			System.out.println(client.getUdpSocketThread()); // .getName());
 			clients[i] = client;
 		}
 
-		for (int i = 0; i < numClients; ++i)
-			Client.destroyClient(clients[i]);
+		for (final Client c : clients)
+			c.destroy();
 
 		new Thread(null, App::launchFxApp, "AGC:FX_APP_LAUNCHER").start();
 	}

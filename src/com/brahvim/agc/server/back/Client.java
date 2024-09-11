@@ -7,88 +7,73 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Client {
+public final class Client {
 
 	// region Fields.
 	private static final ArrayList<Thread> udpSockThreads = new ArrayList<>();
-
 	private static final ArrayList<DatagramSocket> socksUdp = new ArrayList<>();
 	private static final IdentityHashMap<Integer, Socket> socksSsl = new IdentityHashMap<>();
 
 	private static final ArrayDeque<Integer> freeIndices = new ArrayDeque<>();
-	private static final IdentityHashMap<Integer, Integer> idToSoaIndexMap = new IdentityHashMap<>();
 
 	private static final AtomicBoolean inCreateOrDestroy = new AtomicBoolean();
 	// endregion
 
+	private final Integer id;
+
 	static {
-		Client.freeIndices.add(0);
+		// `0` shall be `null`. ...The `null`-object pattern. <Sigh>.
+		Client.freeIndices.add(1);
+
+		Client.socksUdp.add(null);
+		Client.socksSsl.put(0, null);
+		Client.udpSockThreads.add(null);
 	}
 
-	private Client() {
-		throw new IllegalAccessError();
+	public Client() {
+		this.id = Client.createClient();
 	}
 
-	public static synchronized Integer createClient() {
+	public synchronized void destroy() {
 		// synchronized (Client.waitForOtherCreateOrDestroy()) {
-		final Integer soaIndex = Client.idToSoaIndexMap.size();
-		Integer id = Client.freeIndices.poll();
-
-		if (id == null)
-			id = soaIndex;
-
-		Client.idToSoaIndexMap.put(id, soaIndex);
-		Client.ensureArrayListSize(Client.socksUdp, soaIndex);
-		Client.ensureArrayListSize(Client.udpSockThreads, soaIndex);
-
-		// Client.endCurrentCreateOrDestroy();
-		return id;
-		// }
-
-	}
-
-	public static synchronized void destroyClient(final Integer p_clientId) {
-		// synchronized (Client.waitForOtherCreateOrDestroy()) {
-		final var index = Client.mapIdToIndex(p_clientId);
-
 		// `Map`s:
-		Client.socksSsl.remove(index);
-		Client.idToSoaIndexMap.remove(index);
+		Client.socksSsl.remove(this.id);
+		// Client.idToSoaIndexMap.remove(index);
 
 		// `List`s:
-		Client.socksUdp.set(index, null);
-		Client.udpSockThreads.set(index, null);
+		Client.socksUdp.set(this.id, null);
+		Client.udpSockThreads.set(this.id, null);
 
-		Client.freeIndices.add(p_clientId);
+		Client.freeIndices.add(this.id);
 		// Client.endCurrentCreateOrDestroy();
 		// }
 	}
 
 	// region Getters.
-	public static Socket getSslSocket(final Integer p_clientId) {
-		return Client.socksSsl.get(p_clientId);
+	public Socket getSslSocket() {
+		return Client.socksSsl.get(this.id);
 	}
 
-	public static Thread getUdpSocketThread(final Integer p_clientId) {
-		return Client.udpSockThreads.get(Client.mapIdToIndex(p_clientId));
+	public Thread getUdpSocketThread() {
+		return Client.udpSockThreads.get(this.id);
 	}
 
-	public static DatagramSocket getUdpSocket(final Integer p_clientId) {
-		return Client.socksUdp.get(Client.mapIdToIndex(p_clientId));
+	public DatagramSocket getUdpSocket() {
+		return Client.socksUdp.get(this.id);
 	}
 	// endregion
 
 	// region Setters.
-	public static synchronized Socket setSslSocket(final Integer p_clientId, final Socket p_sslSocket) {
-		return Client.socksSsl.put(p_clientId, p_sslSocket);
+	public synchronized Socket setSslSocket(final Socket p_sslSocket) {
+		return Client.socksSsl.put(this.id, p_sslSocket);
 	}
 
-	public static synchronized Thread setUdpSocketThread(final Integer p_clientId, final Thread p_thread) {
-		return Client.udpSockThreads.set(Client.mapIdToIndex(p_clientId), p_thread);
+	public synchronized Thread setUdpSocketThread(final Thread p_thread) {
+		return Client.udpSockThreads.set(this.id, p_thread);
 	}
 
-	public static synchronized DatagramSocket setUdpSocket(final Integer p_clientId, final DatagramSocket p_udpSocket) {
-		return Client.socksUdp.set(p_clientId, p_udpSocket);
+	public synchronized DatagramSocket setUdpSocket(final DatagramSocket p_udpSocket) {
+		return Client.socksUdp.set(this.id, p_udpSocket);
 	}
 	// endregion
 
@@ -122,8 +107,19 @@ public class Client {
 		}
 	}
 
-	private static Integer mapIdToIndex(final Integer p_clientId) {
-		return Client.idToSoaIndexMap.get(p_clientId);
+	private static Integer createClient() {
+		// synchronized (Client.waitForOtherCreateOrDestroy()) {
+		final Integer soaIndex = Client.socksUdp.size();
+		Integer id = Client.freeIndices.poll();
+
+		if (id == null)
+			id = soaIndex;
+
+		// Client.idToSoaIndexMap.put(myId, soaIndex);
+		Client.ensureArrayListSize(Client.socksUdp, soaIndex);
+		Client.ensureArrayListSize(Client.udpSockThreads, soaIndex);
+
+		return id;
 	}
 
 }
