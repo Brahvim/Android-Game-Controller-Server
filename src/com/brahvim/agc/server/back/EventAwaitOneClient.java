@@ -13,6 +13,10 @@ public final class EventAwaitOneClient {
 
 	public static final EventType EVENT_TYPE = EventAwaitOneClient::handle;
 
+	private EventAwaitOneClient() {
+		throw new IllegalAccessError();
+	}
+
 	public static Event create() {
 		return new Event(EventAwaitOneClient.EVENT_TYPE);
 	}

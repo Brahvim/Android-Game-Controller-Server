@@ -8,6 +8,7 @@ import com.brahvim.agc.server.back.Backend;
 import com.brahvim.agc.server.back.EventAwaitOneClient;
 
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -17,10 +18,11 @@ import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
@@ -29,6 +31,12 @@ public final class JavaFxApp extends Application {
 
 	// region Fields.
 	public static final Rectangle2D PRIMARY_SCREEN_RECT = Screen.getPrimary().getBounds();
+
+	private static final EventHandler<KeyEvent> cbckKeyPressedForUndo = JavaFxApp::cbckKeyPressedForUndo;
+
+	private final Font fontForButtons = new Font(15);
+
+	// NOSONAR, these are to be used *anywhere* in this class!
 
 	private HBox row1 = null; // NOSONAR!
 	private VBox col1 = null; // NOSONAR!
@@ -40,7 +48,6 @@ public final class JavaFxApp extends Application {
 	private Button buttonLetClientConnect = null; // NOSONAR!
 	private Button buttonShowClientDisplay = null; // NOSONAR!
 	private ListView<String> listViewClientList = null; // NOSONAR!
-	// NOSONAR, these are to be used *anywhere* in this class!
 	// endregion
 
 	@Override
@@ -54,45 +61,61 @@ public final class JavaFxApp extends Application {
 
 		final var localButtonShowClientDisplay
 		/* */ = this.buttonShowClientDisplay
-		/* */ /* */ = new Button("Press to show client controls screen.");
+		/* */ /* */ = new Button("Open controls window");
 
 		final var localButtonLetClientConnect
 		/* */ = this.buttonLetClientConnect
-		/* */ /* */ = new Button("Await a client.");
+		/* */ /* */ = new Button("Add client");
 
-		final var localListViewClientList = this.listViewClientList = new ListView<>();
+		final var localListViewForClients = this.listViewClientList = new ListView<>();
 		final var localCol1 = this.col1 = new VBox(localButtonShowClientDisplay, localButtonLetClientConnect);
-		final var localRow1 = this.row1 = new HBox(localListViewClientList, localCol1);
+		final var localRow1 = this.row1 = new HBox(localListViewForClients, localCol1);
 
 		final var localPaneRoot = this.paneRoot = new VBox(localRow1);
-
 		final var localMenuClick = this.menuClick = new Menu("Click!");
 		final var localMenuBar = this.menuBar = new MenuBar(localMenuClick);
 
-		localListViewClientList.getItems().addAll(this.createFakeData()); // Can't pass to constructor. Weird.
+		localListViewForClients.getItems().addAll(this.createFakeData()); // Can't pass to constructor. Weird.
 
 		localStage.widthProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
-			final double width = p_newValue.doubleValue();
-			localListViewClientList.setPrefWidth(width - (width / 1.5));
+			final double side = p_newValue.doubleValue();
+
+			localListViewForClients.setPrefWidth(side - (side / 1.5));
+			localButtonShowClientDisplay.setTranslateX(side / 4);
+			localButtonLetClientConnect.setTranslateX(side / 4);
 		});
 
 		localStage.heightProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
-			final double height = p_newValue.doubleValue();
-			localListViewClientList.setPrefHeight(height - (height / 6));
+			final double side = p_newValue.doubleValue();
+
+			localListViewForClients.setPrefHeight(side - (side / 6));
+			localButtonShowClientDisplay.setTranslateY(side / 4);
+			localButtonLetClientConnect.setTranslateY(side / 4);
 		});
 
 		final var localScene = this.scene = new Scene(localPaneRoot);
 		localStage.setScene(localScene);
-		localScene.setFill(Color.BLACK);
 
 		this.initStage();
 		this.initClientList();
 		this.initControlDisplayButton();
 		this.initLetClientConnectButton();
+		this.initButton(localButtonLetClientConnect, localButtonShowClientDisplay);
 
 		localStage.show();
 	}
 
+	private ArrayList<String> createFakeData() {
+		final ArrayList<String> toRet = new ArrayList<>();
+
+		for (int i = 1; i <= 5; i++) {
+			toRet.add("Client " + i);
+		}
+
+		return toRet;
+	}
+
+	// region `init*()` methods.
 	private void initStage() {
 		final double screenHeight = JavaFxApp.PRIMARY_SCREEN_RECT.getHeight();
 		final double screenWidth = JavaFxApp.PRIMARY_SCREEN_RECT.getWidth();
@@ -114,6 +137,21 @@ public final class JavaFxApp extends Application {
 		this.stage.setX((screenWidth - this.stage.getWidth()) / 2);
 		this.stage.setY((screenHeight - this.stage.getHeight()) / 2);
 		// });
+
+		this.paneRoot.getChildren().forEach(c -> {
+			final var cbckKeyPress = c.getOnKeyPressed();
+
+			c.setOnKeyPressed(cbckKeyPress == null
+
+					? JavaFxApp.cbckKeyPressedForUndo::handle
+
+					: p_keyEvent -> {
+						JavaFxApp.cbckKeyPressedForUndo.handle(p_keyEvent);
+						cbckKeyPress.handle(p_keyEvent);
+					}
+
+			);
+		});
 	}
 
 	private void initClientList() {
@@ -159,34 +197,68 @@ public final class JavaFxApp extends Application {
 	private void initControlDisplayButton() {
 		final Button button = this.buttonShowClientDisplay;
 
-		this.scene.widthProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
-			final double sceneWidth = p_newValue.doubleValue();
-			button.setTranslateX(sceneWidth / 2);
-		});
-
-		this.scene.heightProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
-			final double sceneHeight = p_newValue.doubleValue();
-			button.setTranslateY(sceneHeight / 2);
-		});
-
 		button.setOnAction(p_event -> {
-			System.out.println("Controls button pressed for client" + ".");
+			final var selections = this.listViewClientList.getSelectionModel().getSelectedItems();
+
+			// for (final String s : selections) { }
+
+			System.out.printf(
+
+					"Controls button pressed for clients \"%s\".%n",
+					selections.toString()
+
+			);
 		});
 	}
 
 	private void initLetClientConnectButton() {
-		this.buttonLetClientConnect.setOnAction(p_event -> {
+		final Button button = this.buttonLetClientConnect;
+
+		button.setOnAction(p_event -> {
 			Backend.EDT.publish(EventAwaitOneClient.create());
 		});
 	}
 
-	private ArrayList<String> createFakeData() {
-		final ArrayList<String> toRet = new ArrayList<>();
+	private void initButton(final Button... p_button) {
+		for (final Button b : p_button)
+			b.setFont(this.fontForButtons);
+	}
+	// endregion
 
-		for (int i = 0; i < 20; i++)
-			toRet.add("Client " + (Double.hashCode(i)));
+	private static void cbckKeyPressedForUndo(final KeyEvent p_keyEvent) {
+		final boolean alt = p_keyEvent.isAltDown();
+		final boolean meta = p_keyEvent.isMetaDown();
+		final boolean shift = p_keyEvent.isShiftDown();
+		final boolean ctrl = p_keyEvent.isControlDown();
 
-		return toRet;
+		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
+
+		// TODO: Typing bugs?! Check *this out!:*
+
+		switch (p_keyEvent.getCode()) {
+
+			case Y -> {
+				if (!onlyCtrl)
+					return;
+
+				System.out.println("`Ctrl` + `Y` seen.");
+			}
+
+			case Z -> {
+				if (!ctrl)
+					return;
+
+				if (onlyCtrl)
+					System.out.println("`Ctrl` + `Z` seen.");
+
+				if (shift)
+					System.out.println("`Ctrl` + `Shift` + `Z` seen.");
+			}
+
+			default -> {
+			}
+
+		}
 	}
 
 }
