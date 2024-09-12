@@ -12,7 +12,6 @@ public final class EventDispatchThread {
 	public EventDispatchThread(final String p_upperCaseThreadName) {
 		this.thread = new Thread(
 
-				null,
 				this::edtLoop,
 				"AGC:EDT:".concat(p_upperCaseThreadName)
 

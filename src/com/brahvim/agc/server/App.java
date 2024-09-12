@@ -15,7 +15,7 @@ public final class App {
 		// `--module-path ./lib/openjfx --add-modules javafx.controls,javafx.fxml`
 		// (I don't really need the `javafx.fxml` module for this app, but anyway.)
 
-		new Thread(null, App::launchFxApp, "AGC:FX_APP_LAUNCHER").start();
+		new Thread(App::launchFxApp, "AGC:FX_APP_LAUNCHER").start();
 	}
 
 	public static void exit(final ExitCode p_exitCode) {
