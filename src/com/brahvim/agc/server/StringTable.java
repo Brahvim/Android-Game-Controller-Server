@@ -33,6 +33,19 @@ public final class StringTable {
 		this(new File(p_fileName));
 	}
 
+	public static StringTable tryCreating(final String p_fileName) {
+		return StringTable.tryCreating(new File(p_fileName));
+	}
+
+	public static StringTable tryCreating(final File p_file) {
+		try {
+			return new StringTable(p_file);
+		} catch (final FileNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 	/**
 	 * Gets a string given the name of an <i>INI section</i> and <i>INI property</i>
 	 * in the form to grab them off of.
@@ -41,22 +54,27 @@ public final class StringTable {
 	 * returned.
 	 */
 	public String getString(final String p_section, final String p_property) {
-		final String toRet;
+		final String property;
 
 		synchronized (this.table) {
 			final HashMap<String, String> section = this.table.get(p_section);
 
+			if (section == null) {
+				System.err.printf("String table section `%s` not found!%n", p_section);
+				return "";
+			}
+
 			synchronized (section) {
-				toRet = section.get(p_property);
+				property = section.get(p_property);
 			}
 		}
 
-		if (toRet == null) {
-			System.err.printf("String table property `%s` not found!%n", p_section);
+		if (property == null) {
+			System.err.printf("String table property `%s` not found in section `%s`!%n", p_property, p_section);
 			return "";
 		}
 
-		return toRet;
+		return property;
 	}
 
 	/** ...Changes the underlying file! */
@@ -67,7 +85,11 @@ public final class StringTable {
 	/** Re-reads the table off of the file. */
 	public void refresh() {
 		synchronized (this.table) {
-			this.table.clear();
+			if (this.table.size() != 0) { // A mere `int` is returned.
+				this.table.clear(); // WAY more work than that!
+				System.gc(); // All those `HashMap`s need collecting!
+			}
+
 			final String fileName = this.file.getName();
 
 			// System.out.println("Found string table file!");
