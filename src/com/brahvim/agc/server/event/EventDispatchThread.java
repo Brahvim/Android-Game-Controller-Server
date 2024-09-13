@@ -1,26 +1,38 @@
 package com.brahvim.agc.server.event;
 
-import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class EventDispatchThread {
 
+	// region Fields.
 	private final Thread thread;
-	private final Queue<Event> queue = new ConcurrentLinkedQueue<>();
+	private final AtomicBoolean boolAtomicShutdownNotifier;
 	private final Object queueNoLongerEmptyNotifierLock = new Object();
+	private final ConcurrentLinkedQueue<Event> queue = new ConcurrentLinkedQueue<>();
 
-	public EventDispatchThread(final String p_upperCaseThreadName) {
+	private static AtomicInteger count = new AtomicInteger();
+	// endregion
+
+	public EventDispatchThread(final AtomicBoolean p_shutdownNotifier, final String p_upperCaseThreadName) {
+		EventDispatchThread.count.getAndIncrement();
+		this.boolAtomicShutdownNotifier = p_shutdownNotifier;
+
+		// Would save a lot of resources if this was lazy-initialized, but that's too
+		// much checking for `EventDispatchThread::publish()`!...:
+
 		this.thread = new Thread(
 
 				this::edtLoop,
-				"AGC:EDT:".concat(p_upperCaseThreadName)
+				p_upperCaseThreadName
 
 		);
 
 		this.thread.start();
 	}
 
-	public void publish(final Event... p_events) {
+	public final void publish(final Event... p_events) {
 		for (final Event e : p_events)
 			if (e != null)
 				this.queue.add(e);
@@ -30,8 +42,8 @@ public final class EventDispatchThread {
 		}
 	}
 
-	private void edtLoop() {
-		while (true) {
+	private final void edtLoop() {
+		while (!this.boolAtomicShutdownNotifier.get()) {
 			final Event event;
 
 			synchronized (this.queueNoLongerEmptyNotifierLock) {
