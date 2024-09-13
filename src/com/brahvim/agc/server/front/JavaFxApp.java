@@ -284,8 +284,8 @@ public final class JavaFxApp extends Application {
 			final Number p_newValue
 
 	) {
-		JavaFxApp.stage.setX((JavaFxApp.PRIMARY_SCREEN_WIDTH - JavaFxApp.stage.getWidth()) / 2);
-		JavaFxApp.stage.setY((JavaFxApp.PRIMARY_SCREEN_HEIGHT - JavaFxApp.stage.getHeight()) / 2);
+		JavaFxApp.stage.setX(JavaFxApp.PRIMARY_SCREEN_WIDTH / 2);
+		JavaFxApp.stage.setY(JavaFxApp.PRIMARY_SCREEN_HEIGHT / 2);
 	}
 
 	private static void cbckKeyPressedForUndo(final KeyEvent p_keyEvent) {

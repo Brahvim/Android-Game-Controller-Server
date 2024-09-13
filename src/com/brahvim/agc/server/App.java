@@ -16,6 +16,12 @@ public final class App {
 		// (I don't really need the `javafx.fxml` module for this app, but anyway.)
 
 		new Thread(App::launchFxApp, "AGC:FX_APP_LAUNCHER").start();
+
+		try {
+			System.out.println(new StringTable("./res/strings/AgcStringTable.ini").getString("Sect", "prop"));
+		} catch (final Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void exit(final ExitCode p_exitCode) {
