@@ -1,25 +1,20 @@
 package com.brahvim.agc.server.front;
 
 import java.util.ArrayList;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.brahvim.agc.server.App;
-import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.back.Backend;
 import com.brahvim.agc.server.back.EventAwaitOneClient;
 
 import javafx.application.Application;
-import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
-import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -27,10 +22,10 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -38,19 +33,23 @@ import javafx.util.Duration;
 @SuppressWarnings("unused")
 public final class JavaFxApp extends Application {
 
+	// TODO Add keyboard manipulation of list widths.
+	// TODO Add mouse-based drag-to-multi-select.
+
 	// region Fields.
 	public static final Rectangle2D PRIMARY_SCREEN_RECT = Screen.getPrimary().getBounds();
 	public static final double PRIMARY_SCREEN_WIDTH = JavaFxApp.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = JavaFxApp.PRIMARY_SCREEN_RECT.getHeight();
 
 	private static final ArrayList<KeyCode> pressedKeys = new ArrayList<>();
+	private static final ArrayList<String> waitingClients = new ArrayList<>();
 
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
 	private static HBox row1 = null; // NOSONAR!
 	private static Stage stage = null; // NOSONAR!
 	private static Scene scene = null; // NOSONAR!
 	private static Pane paneRoot = null; // NOSONAR!
-	private static Rectangle rectangleSep = null; // NOSONAR!
+	private static Button buttonSeparator = null; // NOSONAR!
 	private static Label labelForClientsList = null; // NOSONAR!
 	private static Label labelForOptionsList = null; // NOSONAR!
 	private static ListView<String> listViewForClients = null; // NOSONAR!
@@ -60,7 +59,7 @@ public final class JavaFxApp extends Application {
 	@Override
 	public void stop() throws Exception {
 		Backend.shutdown();
-		App.exit(ExitCode.OKAY);
+		System.exit(1); // COULD BE a JavaFX crash!
 	}
 
 	@Override
@@ -69,12 +68,12 @@ public final class JavaFxApp extends Application {
 		final var localLabelForOptionsList = JavaFxApp.labelForOptionsList = new Label("Options:");
 		final var localListViewForClients = JavaFxApp.listViewForClients = new ListView<>();
 		final var localListViewForOptions = JavaFxApp.listViewForOptions = new ListView<>();
-		final var localRectangleSep = JavaFxApp.rectangleSep = new Rectangle();
+		final var localButtonSeparator = JavaFxApp.buttonSeparator = new Button();
 		final var localStage = JavaFxApp.stage = p_stage;
 		final var localRow2 = JavaFxApp.row1 = new HBox(
 
 				localListViewForClients,
-				localRectangleSep,
+				localButtonSeparator,
 				localListViewForOptions
 
 		);
@@ -87,7 +86,7 @@ public final class JavaFxApp extends Application {
 		this.initRootPane();
 		this.initClientsList();
 		this.initOptionsList();
-		this.initRectangleSep();
+		this.initSeparatorButton();
 
 		localStage.setScene(localScene);
 		localStage.show();
@@ -125,14 +124,20 @@ public final class JavaFxApp extends Application {
 		JavaFxApp.stage.setWidth(width);
 
 		JavaFxApp.stage.widthProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
-			final double side = p_newValue.doubleValue();
-			final double sideHalf = side / 2;
+			final double newValue = p_newValue.doubleValue();
+			final double oldValue = p_oldValue.doubleValue();
 
-			JavaFxApp.listViewForClients.setPrefWidth(side);
-			JavaFxApp.listViewForOptions.setPrefWidth(side);
+			final var prefWidthListClients = JavaFxApp.listViewForClients.getWidth();
+			final var prefWidthListOptions = JavaFxApp.listViewForOptions.getWidth();
 
-			JavaFxApp.labelForClientsList.setPrefWidth(sideHalf);
-			JavaFxApp.labelForOptionsList.setPrefWidth(sideHalf);
+			final var prefWidthLabelClients = JavaFxApp.labelForClientsList.getWidth();
+			final var prefWidthLabelOptions = JavaFxApp.labelForOptionsList.getWidth();
+
+			JavaFxApp.listViewForClients.setPrefWidth((prefWidthListClients / oldValue) * newValue);
+			JavaFxApp.listViewForOptions.setPrefWidth((prefWidthListOptions / oldValue) * newValue);
+
+			JavaFxApp.labelForClientsList.setPrefWidth((prefWidthLabelClients / oldValue) * newValue);
+			JavaFxApp.labelForOptionsList.setPrefWidth((prefWidthLabelOptions / oldValue) * newValue);
 		});
 
 		JavaFxApp.stage.heightProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
@@ -149,17 +154,17 @@ public final class JavaFxApp extends Application {
 		// final var cbckKeyPress = c.getOnKeyPressed();
 		// });
 
-		paneRoot.setOnKeyPressed(p_event -> {
+		JavaFxApp.paneRoot.setOnKeyPressed(p_event -> {
 			final KeyCode key = p_event.getCode();
 
-			if (!pressedKeys.contains(key))
-				pressedKeys.add(key);
+			if (!JavaFxApp.pressedKeys.contains(key))
+				JavaFxApp.pressedKeys.add(key);
 		});
 
-		paneRoot.setOnKeyReleased(p_event -> pressedKeys.remove(p_event.getCode()));
+		JavaFxApp.paneRoot.setOnKeyReleased(p_event -> JavaFxApp.pressedKeys.remove(p_event.getCode()));
 
-		final var cbckKeyPress = paneRoot.getOnKeyPressed();
-		paneRoot.setOnKeyPressed(cbckKeyPress == null
+		final var cbckKeyPress = JavaFxApp.paneRoot.getOnKeyPressed();
+		JavaFxApp.paneRoot.setOnKeyPressed(cbckKeyPress == null
 
 				? JavaFxApp::cbckKeyPressedForUndo
 
@@ -253,19 +258,47 @@ public final class JavaFxApp extends Application {
 		listView.getItems().addAll(optionLabels);
 	}
 
-	private void initRectangleSep() {
-		final var localSep = JavaFxApp.rectangleSep;
+	private void initSeparatorButton() {
+		final var localSep = JavaFxApp.buttonSeparator;
 		final var localListViewForClients = JavaFxApp.listViewForClients;
 		final var localListViewForOptions = JavaFxApp.listViewForOptions;
 
-		localSep.setWidth(20);
+		localSep.setPrefWidth(20);
+		localSep.setFocusTraversable(false);
+		localSep.setPrefHeight(JavaFxApp.PRIMARY_SCREEN_HEIGHT);
 
-		localSep.setOnMouseDragged(p_eventOnDrag -> {
-			System.out.println("Drag began...");
+		final AtomicLong lastClickTime = new AtomicLong();
+		final AtomicBoolean isDragging = new AtomicBoolean();
 
-			localSep.setOnMouseDragReleased(p_eventOffDrag -> {
-				localSep.setOnMouseDragReleased(null);
-				System.out.println("Drag ended...");
+		final EventHandler<MouseEvent> localCbckMouseDrag = p_event -> {
+			if (!isDragging.get())
+				return;
+
+			// System.out.println("DRAGGING!");
+
+			final double dragAmount = p_event.getSceneX() - (localSep.getLayoutX() + (localSep.getWidth() / 2));
+			final double newWidthListView1 = localListViewForClients.getWidth() + dragAmount;
+			final double newWidthListView2 = localListViewForOptions.getWidth() - dragAmount;
+
+			localListViewForClients.setPrefWidth(newWidthListView1);
+			localListViewForOptions.setPrefWidth(newWidthListView2);
+			JavaFxApp.labelForClientsList.setPrefWidth(newWidthListView1);
+			JavaFxApp.labelForOptionsList.setPrefWidth(newWidthListView2);
+		};
+
+		localSep.setOnDragDetected(p_eventPressed -> {
+			isDragging.set(true);
+			// System.out.println("Dragging detected!");
+			localSep.setOnMouseDragged(localCbckMouseDrag);
+
+			localSep.setOnMouseReleased(p_eventReleased -> {
+				isDragging.set(false);
+
+				// No more useless checks now!:
+				localSep.setOnMouseDragged(null);
+				localSep.setOnMouseReleased(null);
+
+				// System.out.println("Dragging completed.");
 			});
 		});
 
@@ -274,11 +307,11 @@ public final class JavaFxApp extends Application {
 
 	public static <EventT extends Event> void appendEventHandler(
 
-			ObjectProperty<EventHandler<EventT>> p_handlerProperty,
-			EventHandler<EventT> p_toAppend
+			final ObjectProperty<EventHandler<EventT>> p_handlerProperty,
+			final EventHandler<EventT> p_toAppend
 
 	) {
-		EventHandler<EventT> registered = p_handlerProperty.get();
+		final EventHandler<EventT> registered = p_handlerProperty.get();
 		p_handlerProperty.set(p_event -> {
 			registered.handle(p_event);
 			p_toAppend.handle(p_event);
@@ -287,11 +320,11 @@ public final class JavaFxApp extends Application {
 
 	public static <EventT extends Event> void prependEventHandler(
 
-			ObjectProperty<EventHandler<EventT>> p_handlerProperty,
-			EventHandler<EventT> p_toPrepend
+			final ObjectProperty<EventHandler<EventT>> p_handlerProperty,
+			final EventHandler<EventT> p_toPrepend
 
 	) {
-		EventHandler<EventT> registered = p_handlerProperty.get();
+		final EventHandler<EventT> registered = p_handlerProperty.get();
 		p_handlerProperty.set(p_event -> {
 			p_toPrepend.handle(p_event);
 			registered.handle(p_event);
@@ -319,28 +352,35 @@ public final class JavaFxApp extends Application {
 
 			case ADD -> {
 				Backend.EDT.publish(EventAwaitOneClient.create());
-				JavaFxApp.listViewForClients.getItems().add(
+				final String clientEntry = App.STRINGS.getFormatted(
 
-						App.STRINGS.getFormatted(
-
-								"Client",
-								"waiting",
-								1 + Backend.INT_CLIENTS_LEFT.getAndIncrement(),
-								0
-
-						)
+						"Client",
+						"waiting",
+						1 + Backend.INT_CLIENTS_LEFT.getAndIncrement(),
+						0
 
 				);
+
+				JavaFxApp.waitingClients.add(clientEntry);
+				JavaFxApp.listViewForClients.getItems().add(clientEntry);
+
+				System.out.printf("Added client [%s].", clientEntry);
 			}
 
 			case STOP -> {
-				System.out.println("Now awaiting no clients.");
+				JavaFxApp.listViewForClients.getItems().removeAll(JavaFxApp.waitingClients);
 				Backend.INT_CLIENTS_LEFT.set(0);
+				JavaFxApp.waitingClients.clear();
+
+				System.out.println("Now awaiting no clients.");
 			}
 
 			case REMOVE -> {
+				JavaFxApp.waitingClients.removeAll(selectedItems);
 				JavaFxApp.listViewForClients.getItems().removeAll(selectedItems);
 				JavaFxApp.listViewForClients.getSelectionModel().clearSelection();
+
+				System.out.printf("Removed clients %s.%n", selectedItems);
 			}
 
 			case CONTROLS -> {
