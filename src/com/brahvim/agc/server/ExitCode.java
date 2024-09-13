@@ -13,7 +13,7 @@ public enum ExitCode {
 
 	/*	*/ ;
 
-	public static final String errorMessagePrefix = "Exiting! Reason: ";
+	public static final String ERROR_MESSAGE_PREFIX = "Exiting! Reason: ";
 
 	public final String errorMessage;
 

@@ -21,7 +21,7 @@ public final class App {
 	}
 
 	public static void exit(final ExitCode p_exitCode) {
-		System.out.print(ExitCode.errorMessagePrefix);
+		System.out.print(ExitCode.ERROR_MESSAGE_PREFIX);
 		System.out.println(p_exitCode.errorMessage);
 		System.exit(p_exitCode.ordinal());
 	}

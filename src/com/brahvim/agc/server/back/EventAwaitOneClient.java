@@ -42,7 +42,8 @@ public final class EventAwaitOneClient {
 			} catch (final IOException e) {
 				if (e instanceof SocketTimeoutException) { // NOSONAR! Not again!
 					System.out.println("Socket timed out.");
-					App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
+					break;
+					// App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
 				}
 			} catch (final SecurityException e) {
 				App.exit(ExitCode.SSL_SOCKET_ACCEPT_PERMISSION);

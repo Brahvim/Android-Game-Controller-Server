@@ -5,7 +5,6 @@ import java.net.Socket;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 // No, I'm not making this `AutoCloseable`! -v-
 public final class Client {
@@ -16,8 +15,7 @@ public final class Client {
 	private static final IdentityHashMap<Integer, Socket> socksSsl = new IdentityHashMap<>();
 
 	private static final ArrayDeque<Integer> freeIndices = new ArrayDeque<>();
-
-	private static final AtomicBoolean inCreateOrDestroy = new AtomicBoolean();
+	// private static final AtomicBoolean inCreateOrDestroy = new AtomicBoolean();
 	// endregion
 
 	private final Integer id;
@@ -88,25 +86,25 @@ public final class Client {
 			p_list.add(null);
 	}
 
-	private static AtomicBoolean waitForOtherCreateOrDestroy() {
-		synchronized (Client.inCreateOrDestroy) {
-			while (Client.inCreateOrDestroy.get())
-				try {
-					Client.inCreateOrDestroy.wait();
-				} catch (final InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-			return Client.inCreateOrDestroy;
-		}
-	}
-
-	private static AtomicBoolean endCurrentCreateOrDestroy() {
-		synchronized (Client.inCreateOrDestroy) {
-			Client.inCreateOrDestroy.set(false);
-			Client.inCreateOrDestroy.notifyAll();
-			return Client.inCreateOrDestroy;
-		}
-	}
+	// private static AtomicBoolean waitForOtherCreateOrDestroy() {
+	// synchronized (Client.inCreateOrDestroy) {
+	// while (Client.inCreateOrDestroy.get())
+	// try {
+	// Client.inCreateOrDestroy.wait();
+	// } catch (final InterruptedException e) {
+	// Thread.currentThread().interrupt();
+	// }
+	// return Client.inCreateOrDestroy;
+	// }
+	// }
+	//
+	// private static AtomicBoolean endCurrentCreateOrDestroy() {
+	// synchronized (Client.inCreateOrDestroy) {
+	// Client.inCreateOrDestroy.set(false);
+	// Client.inCreateOrDestroy.notifyAll();
+	// return Client.inCreateOrDestroy;
+	// }
+	// }
 
 	private static synchronized Integer createClient() {
 		// synchronized (Client.waitForOtherCreateOrDestroy()) {

@@ -11,6 +11,7 @@ public final class StringTable {
 
 	private final HashMap<String, HashMap<String, String>> table = new HashMap<>();
 
+	private String fileName;
 	private File file;
 
 	public StringTable(final File p_file) throws FileNotFoundException {
@@ -25,8 +26,7 @@ public final class StringTable {
 
 			));
 
-		this.file = p_file;
-		this.refresh();
+		this.changeFile(p_file);
 	}
 
 	public StringTable(final String p_fileName) throws FileNotFoundException {
@@ -48,12 +48,24 @@ public final class StringTable {
 
 	/**
 	 * Gets a string given the name of an <i>INI section</i> and <i>INI property</i>
+	 * in the form to grab them off of, then passes it to `String.format()` with
+	 * your arguments.
+	 *
+	 * If the given section and/or property do not exist, an empty string is
+	 * returned.
+	 */
+	public final String getFormatted(final String p_section, final String p_property, final Object... p_args) {
+		return String.format(this.getString(p_section, p_property), p_args);
+	}
+
+	/**
+	 * Gets a string given the name of an <i>INI section</i> and <i>INI property</i>
 	 * in the form to grab them off of.
 	 *
 	 * If the given section and/or property do not exist, an empty string is
 	 * returned.
 	 */
-	public String getString(final String p_section, final String p_property) {
+	public final String getString(final String p_section, final String p_property) {
 		final String property;
 
 		synchronized (this.table) {
@@ -78,19 +90,20 @@ public final class StringTable {
 	}
 
 	/** ...Changes the underlying file! */
-	public void changeFile(final File p_file) {
+	public final void changeFile(final File p_file) {
 		this.file = p_file;
+		this.fileName = this.file.getName();
+
+		this.refresh();
 	}
 
 	/** Re-reads the table off of the file. */
-	public void refresh() {
+	public final void refresh() {
 		synchronized (this.table) {
 			if (this.table.size() != 0) { // A mere `int` is returned.
 				this.table.clear(); // WAY more work than that!
 				System.gc(); // All those `HashMap`s need collecting!
 			}
-
-			final String fileName = this.file.getName();
 
 			// System.out.println("Found string table file!");
 			try (BufferedReader reader = new BufferedReader(new FileReader(this.file))) {
@@ -125,7 +138,7 @@ public final class StringTable {
 								System.err.printf(
 
 										"String table file `%s` missing at line `%d`.%n",
-										fileName,
+										this.fileName,
 										lineCount
 
 								);

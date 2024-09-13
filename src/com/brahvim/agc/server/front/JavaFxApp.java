@@ -1,25 +1,36 @@
 package com.brahvim.agc.server.front;
 
 import java.util.ArrayList;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
+import com.brahvim.agc.server.App;
+import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.back.Backend;
 import com.brahvim.agc.server.back.EventAwaitOneClient;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -32,14 +43,14 @@ public final class JavaFxApp extends Application {
 	public static final double PRIMARY_SCREEN_WIDTH = JavaFxApp.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = JavaFxApp.PRIMARY_SCREEN_RECT.getHeight();
 
-	private static final EventHandler<KeyEvent> cbckKeyPressedForUndo = JavaFxApp::cbckKeyPressedForUndo;
-	private static final ChangeListener<Number> cbckChangeStageWidthEnsureCenter = JavaFxApp::cbckChangeForStageWidth;
+	private static final ArrayList<KeyCode> pressedKeys = new ArrayList<>();
 
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
 	private static HBox row1 = null; // NOSONAR!
 	private static Stage stage = null; // NOSONAR!
 	private static Scene scene = null; // NOSONAR!
 	private static Pane paneRoot = null; // NOSONAR!
+	private static Rectangle rectangleSep = null; // NOSONAR!
 	private static Label labelForClientsList = null; // NOSONAR!
 	private static Label labelForOptionsList = null; // NOSONAR!
 	private static ListView<String> listViewForClients = null; // NOSONAR!
@@ -49,32 +60,40 @@ public final class JavaFxApp extends Application {
 	@Override
 	public void stop() throws Exception {
 		Backend.shutdown();
+		App.exit(ExitCode.OKAY);
 	}
 
 	@Override
 	public void start(final Stage p_stage) {
-		final var localStage = JavaFxApp.stage = p_stage;
-
-		final var localListViewForClients = JavaFxApp.listViewForClients = new ListView<>();
-		final var localListViewForOptions = JavaFxApp.listViewForOptions = new ListView<>();
-
 		final var localLabelForClientsList = JavaFxApp.labelForClientsList = new Label("Clients:");
 		final var localLabelForOptionsList = JavaFxApp.labelForOptionsList = new Label("Options:");
+		final var localListViewForClients = JavaFxApp.listViewForClients = new ListView<>();
+		final var localListViewForOptions = JavaFxApp.listViewForOptions = new ListView<>();
+		final var localRectangleSep = JavaFxApp.rectangleSep = new Rectangle();
+		final var localStage = JavaFxApp.stage = p_stage;
+		final var localRow2 = JavaFxApp.row1 = new HBox(
 
-		final var localRow1 = JavaFxApp.row1 = new HBox(localListViewForClients, localListViewForOptions);
-		final var localRow2 = new HBox(localLabelForClientsList, localLabelForOptionsList);
-		final var localPaneRoot = JavaFxApp.paneRoot = new VBox(localRow2, localRow1);
+				localListViewForClients,
+				localRectangleSep,
+				localListViewForOptions
 
+		);
+
+		final var localRow1 = new HBox(localLabelForClientsList, localLabelForOptionsList);
+		final var localPaneRoot = JavaFxApp.paneRoot = new VBox(localRow1, localRow2);
 		final var localScene = JavaFxApp.scene = new Scene(localPaneRoot);
-		localStage.setScene(localScene);
 
 		this.initStage();
 		this.initRootPane();
 		this.initClientsList();
 		this.initOptionsList();
+		this.initRectangleSep();
 
+		localStage.setScene(localScene);
 		localStage.show();
-		localStage.widthProperty().removeListener(JavaFxApp.cbckChangeStageWidthEnsureCenter);
+
+		JavaFxApp.stage.setX((JavaFxApp.PRIMARY_SCREEN_WIDTH / 2) - (localStage.getWidth() / 2));
+		JavaFxApp.stage.setY((JavaFxApp.PRIMARY_SCREEN_HEIGHT / 2) - (localStage.getHeight() / 2));
 	}
 
 	private ArrayList<String> createFakeData() {
@@ -105,14 +124,12 @@ public final class JavaFxApp extends Application {
 		JavaFxApp.stage.setHeight(height);
 		JavaFxApp.stage.setWidth(width);
 
-		JavaFxApp.stage.widthProperty().addListener(JavaFxApp.cbckChangeStageWidthEnsureCenter);
-
 		JavaFxApp.stage.widthProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
 			final double side = p_newValue.doubleValue();
 			final double sideHalf = side / 2;
 
-			JavaFxApp.listViewForClients.setPrefWidth(sideHalf);
-			JavaFxApp.listViewForOptions.setPrefWidth(sideHalf);
+			JavaFxApp.listViewForClients.setPrefWidth(side);
+			JavaFxApp.listViewForOptions.setPrefWidth(side);
 
 			JavaFxApp.labelForClientsList.setPrefWidth(sideHalf);
 			JavaFxApp.labelForOptionsList.setPrefWidth(sideHalf);
@@ -128,34 +145,30 @@ public final class JavaFxApp extends Application {
 	}
 
 	private void initRootPane() {
-		JavaFxApp.paneRoot.getChildren().forEach(c -> {
-			final var cbckKeyPress = c.getOnKeyPressed();
+		// JavaFxApp.paneRoot.getChildren().forEach(c -> {
+		// final var cbckKeyPress = c.getOnKeyPressed();
+		// });
 
-			c.setOnKeyPressed(cbckKeyPress == null
+		paneRoot.setOnKeyPressed(p_event -> {
+			final KeyCode key = p_event.getCode();
 
-					? JavaFxApp.cbckKeyPressedForUndo::handle
-
-					: p_keyEvent -> {
-						JavaFxApp.cbckKeyPressedForUndo.handle(p_keyEvent);
-						cbckKeyPress.handle(p_keyEvent);
-					}
-
-			);
-		});
-	}
-
-	private void initAllLists() {
-		JavaFxApp.stage.widthProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
-			final double side = p_newValue.doubleValue();
-			JavaFxApp.listViewForClients.setPrefWidth(side / 2);
-			JavaFxApp.listViewForOptions.setPrefWidth(side / 2);
+			if (!pressedKeys.contains(key))
+				pressedKeys.add(key);
 		});
 
-		JavaFxApp.stage.heightProperty().addListener((p_observable, p_oldValue, p_newValue) -> {
-			final double side = p_newValue.doubleValue();
-			JavaFxApp.listViewForClients.setPrefHeight(side - (side / 12));
-			JavaFxApp.listViewForOptions.setPrefHeight(side - (side / 12));
-		});
+		paneRoot.setOnKeyReleased(p_event -> pressedKeys.remove(p_event.getCode()));
+
+		final var cbckKeyPress = paneRoot.getOnKeyPressed();
+		paneRoot.setOnKeyPressed(cbckKeyPress == null
+
+				? JavaFxApp::cbckKeyPressedForUndo
+
+				: p_keyEvent -> {
+					cbckKeyPress.handle(p_keyEvent);
+					JavaFxApp.cbckKeyPressedForUndo(p_keyEvent);
+				}
+
+		);
 	}
 
 	private void initClientsList() {
@@ -190,7 +203,7 @@ public final class JavaFxApp extends Application {
 			switch (p_event.getCode()) {
 
 				case ENTER, SPACE ->
-					this.cbckSelectionMadeForOptionsList();
+					JavaFxApp.cbckSelectionMadeForOptionsList();
 
 				default -> {
 					return;
@@ -213,7 +226,7 @@ public final class JavaFxApp extends Application {
 
 					switch (p_event.getButton()) {
 
-						case PRIMARY -> JavaFxApp.this.cbckSelectionMadeForOptionsList();
+						case PRIMARY -> JavaFxApp.cbckSelectionMadeForOptionsList();
 
 						default -> {
 							//
@@ -239,14 +252,62 @@ public final class JavaFxApp extends Application {
 
 		listView.getItems().addAll(optionLabels);
 	}
+
+	private void initRectangleSep() {
+		final var localSep = JavaFxApp.rectangleSep;
+		final var localListViewForClients = JavaFxApp.listViewForClients;
+		final var localListViewForOptions = JavaFxApp.listViewForOptions;
+
+		localSep.setWidth(20);
+
+		localSep.setOnMouseDragged(p_eventOnDrag -> {
+			System.out.println("Drag began...");
+
+			localSep.setOnMouseDragReleased(p_eventOffDrag -> {
+				localSep.setOnMouseDragReleased(null);
+				System.out.println("Drag ended...");
+			});
+		});
+
+	}
 	// endregion
 
-	private void cbckSelectionMadeForOptionsList() {
+	public static <EventT extends Event> void appendEventHandler(
+
+			ObjectProperty<EventHandler<EventT>> p_handlerProperty,
+			EventHandler<EventT> p_toAppend
+
+	) {
+		EventHandler<EventT> registered = p_handlerProperty.get();
+		p_handlerProperty.set(p_event -> {
+			registered.handle(p_event);
+			p_toAppend.handle(p_event);
+		});
+	}
+
+	public static <EventT extends Event> void prependEventHandler(
+
+			ObjectProperty<EventHandler<EventT>> p_handlerProperty,
+			EventHandler<EventT> p_toPrepend
+
+	) {
+		EventHandler<EventT> registered = p_handlerProperty.get();
+		p_handlerProperty.set(p_event -> {
+			p_toPrepend.handle(p_event);
+			registered.handle(p_event);
+		});
+	}
+
+	private static void cbckSelectionMadeForOptionsList() {
 		final var clientSelections = JavaFxApp.listViewForClients.getSelectionModel();
 		final var optionSelections = JavaFxApp.listViewForOptions.getSelectionModel();
 
 		final var selectedItems = clientSelections.getSelectedItems();
 		final var selectedOption = Option.valueOfLabel(optionSelections.getSelectedItem());
+
+		// No guarantee when method exits + reduces "flicker":
+		optionSelections.clearSelection();
+		// clientSelections.clearSelection(); // Cleared on its own + this call's buggy!
 
 		// System.out.printf("Option `%s` will be applied to `%s`.%n", selectedOption,
 		// selectedItems);
@@ -258,6 +319,18 @@ public final class JavaFxApp extends Application {
 
 			case ADD -> {
 				Backend.EDT.publish(EventAwaitOneClient.create());
+				JavaFxApp.listViewForClients.getItems().add(
+
+						App.STRINGS.getFormatted(
+
+								"Client",
+								"waiting",
+								1 + Backend.INT_CLIENTS_LEFT.getAndIncrement(),
+								0
+
+						)
+
+				);
 			}
 
 			case STOP -> {
@@ -277,17 +350,6 @@ public final class JavaFxApp extends Application {
 		}
 	}
 
-	private static void cbckChangeForStageWidth(
-
-			final ObservableValue<? extends Number> p_observable,
-			final Number p_oldValue,
-			final Number p_newValue
-
-	) {
-		JavaFxApp.stage.setX(JavaFxApp.PRIMARY_SCREEN_WIDTH / 2);
-		JavaFxApp.stage.setY(JavaFxApp.PRIMARY_SCREEN_HEIGHT / 2);
-	}
-
 	private static void cbckKeyPressedForUndo(final KeyEvent p_keyEvent) {
 		final boolean alt = p_keyEvent.isAltDown();
 		final boolean meta = p_keyEvent.isMetaDown();
@@ -295,6 +357,11 @@ public final class JavaFxApp extends Application {
 		final boolean ctrl = p_keyEvent.isControlDown();
 
 		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
+		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
+
+		final KeyCode[] keys = {
+				KeyCode.SHIFT,
+		};
 
 		// TODO: Typing bugs?! Check *this out!:*
 
