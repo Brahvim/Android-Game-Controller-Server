@@ -43,7 +43,8 @@ public final class JavaFxApp extends Application {
 	// TODO Add keyboard manipulation of list widths.
 
 	// region Fields.
-	public static final Rectangle2D PRIMARY_SCREEN_RECT = Screen.getPrimary().getBounds();
+	private static final Screen PRIMARY_SCREEN = Screen.getPrimary();
+	public static final Rectangle2D PRIMARY_SCREEN_RECT = JavaFxApp.PRIMARY_SCREEN.getBounds();
 	public static final double PRIMARY_SCREEN_WIDTH = JavaFxApp.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = JavaFxApp.PRIMARY_SCREEN_RECT.getHeight();
 
@@ -102,7 +103,6 @@ public final class JavaFxApp extends Application {
 		JavaFxApp.stage.setY((JavaFxApp.PRIMARY_SCREEN_HEIGHT / 2) - (localStage.getHeight() / 2));
 	}
 
-	// region `init*()` methods.
 	private void initStage() {
 		final Stage localStage = JavaFxApp.stage;
 		final double width = JavaFxApp.PRIMARY_SCREEN_WIDTH / 4;
@@ -195,14 +195,15 @@ public final class JavaFxApp extends Application {
 	private void initClientsList() {
 		final var localListView = JavaFxApp.listViewForClients;
 		final var selectionModel = localListView.getSelectionModel();
+		final var localLabelForClientsList = JavaFxApp.labelForClientsList;
 
 		localListView.setStyle("-fx-background-color: black;");
-		JavaFxApp.labelForClientsList.setStyle("-fx-text-fill: gray;");
-		JavaFxApp.labelForClientsList.setPrefWidth(JavaFxApp.stage.getWidth() / 2.1);
+		localLabelForClientsList.setStyle("-fx-text-fill: gray;"); // NOSONAR! Can't! It's CSS!
+		localLabelForClientsList.setPrefWidth(JavaFxApp.stage.getWidth() / 2.1);
 		// (Surprisingly, `2.1` *was* the correct number to divide by.)
 
-		final AtomicReference<ListCell<String>> startCell = new AtomicReference<>();
 		final AtomicInteger startId = new AtomicInteger(-1); // Also used for drag status - not just the first index!
+		final AtomicReference<ListCell<String>> startCell = new AtomicReference<>();
 
 		localListView.setCellFactory(p_listView -> {
 			final var toRet = new ListCell<String>() {
@@ -279,18 +280,8 @@ public final class JavaFxApp extends Application {
 				startCell.get().setOnMouseReleased(localCbckMouseReleased);
 			});
 
-			// toRet.onMouseReleasedProperty().addListener((p_property, p_oldValue,
-			// p_newValue) -> {
-			// System.out.printf("Mouse-release callback now `%s` for cell `%s`.%n",
-			// p_newValue, toRet.getIndex());
-			// });
-
 			return toRet;
 		});
-
-		// localListView.setOnMousePressed(p_event -> {
-		// System.out.printf("Mouse pressed on `%s`.%n", p_event.getSource());
-		// });
 
 		localListView.setStyle("-fx-background-color: black;");
 		selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
@@ -301,7 +292,7 @@ public final class JavaFxApp extends Application {
 			// System.out.println("Key pressed with list-view in focus!");
 			switch (p_keyEvent.getCode()) {
 
-				// case DELETE -> localListView.getItems().removeAll(selectedItems);
+				case DELETE -> localListView.getItems().removeAll(selectedItems);
 
 				default -> {
 					//
@@ -309,13 +300,26 @@ public final class JavaFxApp extends Application {
 
 			}
 		});
+
+		localListView.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
+			final boolean inFocus = p_newValue; // JavaFX ain't settin' it `null`!...
+			localLabelForClientsList.setStyle(
+
+					inFocus
+							? "-fx-text-fill: white;"
+							: "-fx-text-fill: gray;"
+
+			);
+		});
 	}
 
 	private void initOptionsList() {
 		final var localListView = JavaFxApp.listViewForOptions;
+		final var localLabelForOptionsList = JavaFxApp.labelForOptionsList;
 
+		localListView.requestFocus();
 		localListView.setStyle("-fx-background-color: black;");
-		JavaFxApp.labelForOptionsList.setStyle("-fx-text-fill: gray;");
+		localLabelForOptionsList.setStyle("-fx-text-fill: gray;");
 
 		final Option[] options = Option.values();
 		final String[] optionLabels = new String[options.length];
@@ -387,6 +391,17 @@ public final class JavaFxApp extends Application {
 			return toRet;
 		});
 
+		localListView.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
+			final boolean inFocus = p_newValue; // JavaFX ain't settin' it `null`!...
+			localLabelForOptionsList.setStyle(
+
+					inFocus
+							? "-fx-text-fill: white;"
+							: "-fx-text-fill: gray;"
+
+			);
+		});
+
 		localListView.getItems().addAll(optionLabels);
 	}
 
@@ -439,7 +454,6 @@ public final class JavaFxApp extends Application {
 		});
 
 	}
-	// endregion
 
 	public static <EventT extends Event> void appendEventHandler(
 
@@ -468,7 +482,7 @@ public final class JavaFxApp extends Application {
 	}
 
 	// If I'm not submitting this to an API, `on*()`. Else `cbck*()`.
-	private static synchronized void onSelectionMadeInOptionsList() {
+	private static void onSelectionMadeInOptionsList() {
 		final var clientSelections = JavaFxApp.listViewForClients.getSelectionModel();
 		final var optionSelections = JavaFxApp.listViewForOptions.getSelectionModel();
 
