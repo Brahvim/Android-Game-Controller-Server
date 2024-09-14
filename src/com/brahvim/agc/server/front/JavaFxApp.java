@@ -214,16 +214,7 @@ public final class JavaFxApp extends Application {
 			);
 
 			localLabelForClients.setPrefWidth(widthOfClientElements);
-			localListViewForClients.setPrefWidth(widthOfClientElements
-			// Math.min(JavaFxApp.stage.getWidth() / 2,
-			// localListViewForClients.getWidth() + velocity
-			// )
-			);
-
-			// localLabelForOptions.setPrefWidth(localLabelForOptions.getPrefWidth() -
-			// velocity);
-			// localListViewForOptions.setPrefWidth(localListViewForOptions.getWidth() +
-			// velocity);
+			localListViewForClients.setPrefWidth(widthOfClientElements);
 		});
 	}
 
@@ -496,16 +487,12 @@ public final class JavaFxApp extends Application {
 			final double widthOfOptionElements = localListViewForOptions.getWidth() - dragAmount;
 
 			final double stageHalf = JavaFxApp.stage.getWidth() / 2;
+			final double stageQuart = JavaFxApp.stage.getWidth() / 4;
 
-			localListViewForClients.setPrefWidth(Math.min(
-					stageHalf, widthOfClientElements));
-			JavaFxApp.labelForClientsList.setPrefWidth(Math.min(
-					stageHalf, widthOfClientElements));
-
-			localListViewForOptions.setPrefWidth(Math.max(
-					stageHalf, widthOfOptionElements));
-			JavaFxApp.labelForOptionsList.setPrefWidth(Math.max(
-					stageHalf, widthOfOptionElements));
+			localListViewForClients.setPrefWidth(Math.max(
+					stageQuart, widthOfClientElements));
+			JavaFxApp.labelForClientsList.setPrefWidth(Math.max(
+					stageQuart, widthOfClientElements));
 		};
 
 		localSep.setOnDragDetected(p_eventPressed -> {
