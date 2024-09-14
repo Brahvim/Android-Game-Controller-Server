@@ -24,24 +24,24 @@ public final class EventAwaitOneClient {
 	}
 
 	private static void socketThreadCallee() {
-		System.out.println("Awaiting one client...");
+		// System.out.println("Awaiting one client...");
 		final var socket = Backend.socketForWelcome =
 				/* */ Backend.socketForWelcome == null
 						? EventAwaitOneClient.createSslServerSocket()
 						: Backend.socketForWelcome;
 
-		System.out.println("Entering `socket::accept()` loop...");
+		// System.out.println("Entering `socket::accept()` loop...");
 
-		while (Backend.INT_CLIENTS_LEFT.get() > 0)
+		for (int i = 0; (i = Backend.INT_CLIENTS_LEFT.get()) > 0;)
 			try {
-				System.out.println("Iterated `socket::accept()` loop...");
+				System.out.printf("Iterated `socket::accept()` loop for client `%d`...%n", i);
 				// final Socket clientSocket =
 				socket.accept();
 				Backend.socketForWelcome.close();
 				Backend.INT_CLIENTS_LEFT.getAndDecrement();
 			} catch (final IOException e) {
 				if (e instanceof SocketTimeoutException) { // NOSONAR! Not again!
-					System.out.println("Socket timed out.");
+					// System.out.println("Socket timed out.");
 					break;
 					// App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
 				}
@@ -50,13 +50,12 @@ public final class EventAwaitOneClient {
 			}
 
 		Backend.threadForWelcomeSocket = null;
-		System.out.println("Welcome socket thread stopped.");
+		// System.out.println("Welcome socket thread stopped.");
 	}
 
 	private static void handle(final Event p_event) {
 		if (Backend.threadForWelcomeSocket != null) {
-			Backend.INT_CLIENTS_LEFT.incrementAndGet();
-			System.out.println("Welcome socket thread told to wait for another client.");
+			// System.out.println("Welcome socket thread told to wait for another client.");
 			return;
 		}
 
@@ -68,7 +67,7 @@ public final class EventAwaitOneClient {
 		);
 
 		thread.start();
-		System.out.println("Welcome socket thread created.");
+		// System.out.println("Welcome socket thread created.");
 	}
 
 	private static ServerSocket createSslServerSocket() {

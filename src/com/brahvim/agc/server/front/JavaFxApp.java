@@ -47,7 +47,7 @@ public final class JavaFxApp extends Application {
 	public static final double PRIMARY_SCREEN_WIDTH = JavaFxApp.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = JavaFxApp.PRIMARY_SCREEN_RECT.getHeight();
 
-	private static final Font fontForTooltips = new Font(15);
+	private static final Font fontForTooltips = new Font(18);
 	private static final ArrayList<KeyCode> pressedKeys = new ArrayList<>();
 	private static final ArrayList<String> waitingClients = new ArrayList<>();
 
@@ -89,12 +89,6 @@ public final class JavaFxApp extends Application {
 		final var localPaneRoot = JavaFxApp.paneRoot = new VBox(localRow1, localRow2);
 		final var localScene = JavaFxApp.scene = new Scene(localPaneRoot);
 
-		localLabelForClientsList.setStyle("-fx-text-fill: gray;");
-		localLabelForOptionsList.setStyle("-fx-text-fill: gray;");
-
-		localListViewForClients.setStyle("-fx-background-color: black;"); // NOSONAR! Repeated 9 times, but it's CSS!
-		localListViewForOptions.setStyle("-fx-background-color: black;");
-
 		this.initStage();
 		this.initRootPane();
 		this.initClientsList();
@@ -106,15 +100,6 @@ public final class JavaFxApp extends Application {
 
 		JavaFxApp.stage.setX((JavaFxApp.PRIMARY_SCREEN_WIDTH / 2) - (localStage.getWidth() / 2));
 		JavaFxApp.stage.setY((JavaFxApp.PRIMARY_SCREEN_HEIGHT / 2) - (localStage.getHeight() / 2));
-	}
-
-	private ArrayList<String> createFakeData() {
-		final ArrayList<String> toRet = new ArrayList<>();
-
-		for (int i = 1; i <= 5; ++i)
-			toRet.add("Client " + i);
-
-		return toRet;
 	}
 
 	// region `init*()` methods.
@@ -178,7 +163,7 @@ public final class JavaFxApp extends Application {
 
 	private void initRootPane() {
 		final var localPaneRoot = JavaFxApp.paneRoot;
-		localPaneRoot.setStyle("-fx-background-color: black;");
+		localPaneRoot.setStyle("-fx-background-color: black;"); // NOSONAR! Repeated 9 times, but it's CSS!
 
 		// JavaFxApp.paneRoot.getChildren().forEach(c -> {
 		// final var cbckKeyPress = c.getOnKeyPressed();
@@ -211,9 +196,13 @@ public final class JavaFxApp extends Application {
 		final var localListView = JavaFxApp.listViewForClients;
 		final var selectionModel = localListView.getSelectionModel();
 
-		// Also used to track drags!:
-		final AtomicInteger startId = new AtomicInteger(-1);
+		localListView.setStyle("-fx-background-color: black;");
+		JavaFxApp.labelForClientsList.setStyle("-fx-text-fill: gray;");
+		JavaFxApp.labelForClientsList.setPrefWidth(JavaFxApp.stage.getWidth() / 2.1);
+		// (Surprisingly, `2.1` *was* the correct number to divide by.)
+
 		final AtomicReference<ListCell<String>> startCell = new AtomicReference<>();
+		final AtomicInteger startId = new AtomicInteger(-1); // Also used for drag status - not just the first index!
 
 		localListView.setCellFactory(p_listView -> {
 			final var toRet = new ListCell<String>() {
@@ -238,7 +227,6 @@ public final class JavaFxApp extends Application {
 
 			};
 
-			//
 			toRet.setOnMousePressed(p_event -> {
 				final int myId = toRet.getIndex();
 				final String myText = toRet.getText();
@@ -305,7 +293,6 @@ public final class JavaFxApp extends Application {
 		// });
 
 		localListView.setStyle("-fx-background-color: black;");
-		localListView.getItems().addAll(this.createFakeData()); // Can't pass to constructor. Weird.
 		selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
 
 		localListView.setOnKeyPressed(p_keyEvent -> {
@@ -327,6 +314,9 @@ public final class JavaFxApp extends Application {
 	private void initOptionsList() {
 		final var localListView = JavaFxApp.listViewForOptions;
 
+		localListView.setStyle("-fx-background-color: black;");
+		JavaFxApp.labelForOptionsList.setStyle("-fx-text-fill: gray;");
+
 		final Option[] options = Option.values();
 		final String[] optionLabels = new String[options.length];
 
@@ -337,7 +327,7 @@ public final class JavaFxApp extends Application {
 			switch (p_event.getCode()) {
 
 				case ENTER, SPACE ->
-					JavaFxApp.cbckSelectionMadeForOptionsList();
+					JavaFxApp.onSelectionMadeInOptionsList();
 
 				default -> {
 					return;
@@ -365,7 +355,7 @@ public final class JavaFxApp extends Application {
 
 						switch (p_event.getButton()) {
 
-							case PRIMARY -> JavaFxApp.cbckSelectionMadeForOptionsList();
+							case PRIMARY -> JavaFxApp.onSelectionMadeInOptionsList();
 
 							default -> {
 								//
@@ -477,7 +467,8 @@ public final class JavaFxApp extends Application {
 		});
 	}
 
-	private static void cbckSelectionMadeForOptionsList() {
+	// If I'm not submitting this to an API, `on*()`. Else `cbck*()`.
+	private static synchronized void onSelectionMadeInOptionsList() {
 		final var clientSelections = JavaFxApp.listViewForClients.getSelectionModel();
 		final var optionSelections = JavaFxApp.listViewForOptions.getSelectionModel();
 
@@ -497,8 +488,10 @@ public final class JavaFxApp extends Application {
 		switch (selectedOption) {
 
 			case ADD -> {
+				final String clientEntry;
 				Backend.EDT.publish(EventAwaitOneClient.create());
-				final String clientEntry = App.STRINGS.getFormatted(
+
+				clientEntry = App.STRINGS.getFormatted(
 
 						"Client",
 						"waiting",
@@ -509,8 +502,7 @@ public final class JavaFxApp extends Application {
 
 				JavaFxApp.waitingClients.add(clientEntry);
 				JavaFxApp.listViewForClients.getItems().add(clientEntry);
-
-				System.out.printf("Added client [%s].", clientEntry);
+				System.out.printf("Added client [%s].%n", clientEntry);
 			}
 
 			case STOP -> {
@@ -525,7 +517,7 @@ public final class JavaFxApp extends Application {
 				JavaFxApp.waitingClients.removeAll(selectedItems);
 				JavaFxApp.listViewForClients.getItems().removeAll(selectedItems);
 				JavaFxApp.listViewForClients.getSelectionModel().clearSelection();
-				optionSelections.clearSelection();
+				// optionSelections.clearSelection();
 
 				System.out.printf("Removed clients %s.%n", selectedItems);
 			}
