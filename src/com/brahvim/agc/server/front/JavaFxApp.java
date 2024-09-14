@@ -40,8 +40,6 @@ import javafx.util.Duration;
 @SuppressWarnings("unused")
 public final class JavaFxApp extends Application {
 
-	// TODO Add keyboard manipulation of list widths.
-
 	// region Fields.
 	private static final Screen PRIMARY_SCREEN = Screen.getPrimary();
 	public static final Rectangle2D PRIMARY_SCREEN_RECT = JavaFxApp.PRIMARY_SCREEN.getBounds();
@@ -116,18 +114,18 @@ public final class JavaFxApp extends Application {
 			System.err.println("AGC Icon not found.");
 		}
 
-		localStage.setTitle("AndroidGameController - Home");
-		// stage.initStyle(StageStyle.TRANSPARENT);
 		localStage.setResizable(true);
+		// stage.initStyle(StageStyle.TRANSPARENT);
+		localStage.setTitle("AndroidGameController - Home");
 
-		localStage.setMinHeight(120);
-		localStage.setMinWidth(120);
-
-		localStage.setMaxHeight(JavaFxApp.PRIMARY_SCREEN_HEIGHT);
-		localStage.setMaxWidth(JavaFxApp.PRIMARY_SCREEN_WIDTH);
-
-		localStage.setHeight(height);
 		localStage.setWidth(width);
+		localStage.setHeight(height);
+
+		localStage.setMinWidth(120);
+		localStage.setMinHeight(120);
+
+		localStage.setMaxWidth(JavaFxApp.PRIMARY_SCREEN_WIDTH);
+		localStage.setMaxHeight(JavaFxApp.PRIMARY_SCREEN_HEIGHT);
 
 		final var localListViewForClients = JavaFxApp.listViewForClients;
 		final var localListViewForOptions = JavaFxApp.listViewForOptions;
@@ -136,28 +134,12 @@ public final class JavaFxApp extends Application {
 		final var localLabelForClientsList = JavaFxApp.labelForClientsList;
 
 		localStage.widthProperty().addListener((p_property, p_oldValue, p_newValue) -> {
-			final double newValue = p_newValue.doubleValue();
-			final double oldValue = p_oldValue.doubleValue();
-
-			final double prefWidthListClients = localListViewForClients.getWidth();
-			final double prefWidthListOptions = localListViewForOptions.getWidth();
-
-			final double prefWidthLabelClients = localLabelForClientsList.getWidth();
-			final double prefWidthLabelOptions = localLabelForOptionsList.getWidth();
-
-			localListViewForClients.setPrefWidth((prefWidthListClients / oldValue) * newValue);
-			localListViewForOptions.setPrefWidth((prefWidthListOptions / oldValue) * newValue);
-
-			localLabelForClientsList.setPrefWidth((prefWidthLabelClients / oldValue) * newValue);
-			localLabelForOptionsList.setPrefWidth((prefWidthLabelOptions / oldValue) * newValue);
+			JavaFxApp.onListViewsWiden(p_newValue.doubleValue(), p_oldValue.doubleValue());
 		});
 
 		localStage.heightProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			final double side = p_newValue.doubleValue();
-			final double listHeight = side - (side / 12);
-
-			localListViewForClients.setPrefHeight(listHeight);
-			localListViewForOptions.setPrefHeight(listHeight);
+			JavaFxApp.onListViewsHeighten(side - (side / 12));
 		});
 	}
 
@@ -174,6 +156,37 @@ public final class JavaFxApp extends Application {
 
 			if (!JavaFxApp.pressedKeys.contains(key))
 				JavaFxApp.pressedKeys.add(key);
+
+			final boolean alt = p_event.isAltDown();
+			final boolean meta = p_event.isMetaDown();
+			final boolean shift = p_event.isShiftDown();
+			final boolean ctrl = p_event.isControlDown();
+
+			final boolean onlyCtrl = ctrl && !(alt || meta || shift);
+			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
+
+			switch (p_event.getCode()) {
+
+				// TODO Add keyboard manipulation final of list widths.
+
+				case LEFT -> {
+					if (onlyCtrl) {
+					} else if (onlyShiftCtrl) {
+					}
+				}
+
+				case RIGHT -> {
+					if (onlyCtrl) {
+					} else if (onlyShiftCtrl) {
+					}
+				}
+
+				default -> {
+					return;
+				}
+
+			}
+
 		});
 
 		localPaneRoot.setOnKeyReleased(p_event -> JavaFxApp.pressedKeys.remove(p_event.getCode()));
@@ -182,7 +195,6 @@ public final class JavaFxApp extends Application {
 		localPaneRoot.setOnKeyPressed(cbckKeyPress == null
 
 				? JavaFxApp::cbckKeyPressedForUndo
-
 				: p_keyEvent -> {
 					cbckKeyPress.handle(p_keyEvent);
 					JavaFxApp.cbckKeyPressedForUndo(p_keyEvent);
@@ -238,7 +250,7 @@ public final class JavaFxApp extends Application {
 
 				// try {
 
-				// TODO: If newer JavaFX fixes this, use next line (genuine solution):
+				// FIXME: If newer JavaFX fixes this, use next line (genuine solution):
 				selectedItems.remove(myText); // Surprisingly fully reliable!
 				// selectionModel.clearAndSelect(myId); // Surprisingly fails every single time.
 
@@ -303,11 +315,10 @@ public final class JavaFxApp extends Application {
 
 		localListView.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			final boolean inFocus = p_newValue; // JavaFX ain't settin' it `null`!...
-			localLabelForClientsList.setStyle(
+			localLabelForClientsList.setStyle(inFocus
 
-					inFocus
-							? "-fx-text-fill: white;"
-							: "-fx-text-fill: gray;"
+					? "-fx-text-fill: white;"
+					: "-fx-text-fill: gray;"
 
 			);
 		});
@@ -352,23 +363,23 @@ public final class JavaFxApp extends Application {
 					else
 						super.setStyle("-fx-background-color: black; -fx-text-fill: grey;");
 
-					super.setOnMouseClicked(p_event -> {
-						//
-						// if (p_event.getPickResult().getIntersectedNode() != this)
-						// return;
-
-						switch (p_event.getButton()) {
-
-							case PRIMARY -> JavaFxApp.onSelectionMadeInOptionsList();
-
-							default -> {
-								//
-							}
-
-						}
-					});
-
 					if (p_label != null /* && !p_isEmpty */) {
+						super.setOnMouseClicked(p_event -> {
+							//
+							// if (p_event.getPickResult().getIntersectedNode() != this)
+							// return;
+
+							switch (p_event.getButton()) {
+
+								case PRIMARY -> JavaFxApp.onSelectionMadeInOptionsList();
+
+								default -> {
+									//
+								}
+
+							}
+						});
+
 						final String tooltipText = Option.valueOfLabel(p_label).TOOLTIP;
 
 						if (!tooltipText.isEmpty()) {
@@ -393,11 +404,10 @@ public final class JavaFxApp extends Application {
 
 		localListView.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			final boolean inFocus = p_newValue; // JavaFX ain't settin' it `null`!...
-			localLabelForOptionsList.setStyle(
+			localLabelForOptionsList.setStyle(inFocus
 
-					inFocus
-							? "-fx-text-fill: white;"
-							: "-fx-text-fill: gray;"
+					? "-fx-text-fill: white;"
+					: "-fx-text-fill: gray;"
 
 			);
 		});
@@ -452,7 +462,6 @@ public final class JavaFxApp extends Application {
 				// System.out.println("Dragging completed.");
 			});
 		});
-
 	}
 
 	public static <EventT extends Event> void appendEventHandler(
@@ -543,22 +552,18 @@ public final class JavaFxApp extends Application {
 		}
 	}
 
-	private static void cbckKeyPressedForUndo(final KeyEvent p_keyEvent) {
-		final boolean alt = p_keyEvent.isAltDown();
-		final boolean meta = p_keyEvent.isMetaDown();
-		final boolean shift = p_keyEvent.isShiftDown();
-		final boolean ctrl = p_keyEvent.isControlDown();
+	private static void cbckKeyPressedForUndo(final KeyEvent p_event) {
+		final boolean alt = p_event.isAltDown();
+		final boolean meta = p_event.isMetaDown();
+		final boolean shift = p_event.isShiftDown();
+		final boolean ctrl = p_event.isControlDown();
 
 		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
 		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
 
-		final KeyCode[] keys = {
-				KeyCode.SHIFT,
-		};
+		// FIXME: If typing bugs, check *this out!:*
 
-		// TODO: Typing bugs?! Check *this out!:*
-
-		switch (p_keyEvent.getCode()) {
+		switch (p_event.getCode()) {
 
 			case Y -> {
 				if (!onlyCtrl)
@@ -583,6 +588,23 @@ public final class JavaFxApp extends Application {
 			}
 
 		}
+	}
+
+	private static void onListViewsHeighten(final double p_listHeight) {
+		JavaFxApp.listViewForClients.setPrefHeight(p_listHeight);
+		JavaFxApp.listViewForOptions.setPrefHeight(p_listHeight);
+	}
+
+	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
+		final var localListViewForClients = JavaFxApp.listViewForClients;
+		final var localListViewForOptions = JavaFxApp.listViewForOptions;
+		final var localLabelForClientsList = JavaFxApp.labelForClientsList;
+		final var localLabelForOptionsList = JavaFxApp.labelForOptionsList;
+
+		localListViewForClients.setPrefWidth((localListViewForClients.getPrefWidth() / p_oldValue) * p_newValue);
+		localListViewForOptions.setPrefWidth((localListViewForOptions.getPrefWidth() / p_oldValue) * p_newValue);
+		localLabelForOptionsList.setPrefWidth((localLabelForOptionsList.getPrefWidth() / p_oldValue) * p_newValue);
+		localLabelForClientsList.setPrefWidth((localLabelForClientsList.getPrefWidth() / p_oldValue) * p_newValue);
 	}
 
 }
