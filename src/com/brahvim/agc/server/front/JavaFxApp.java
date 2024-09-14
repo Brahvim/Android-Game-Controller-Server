@@ -46,7 +46,7 @@ public final class JavaFxApp extends Application {
 	public static final double PRIMARY_SCREEN_WIDTH = JavaFxApp.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = JavaFxApp.PRIMARY_SCREEN_RECT.getHeight();
 
-	private static final Font fontForTooltips = new Font(18);
+	private static final Font fontLarge = new Font(18);
 	private static final ArrayList<KeyCode> pressedKeys = new ArrayList<>();
 	private static final ArrayList<String> waitingClients = new ArrayList<>();
 
@@ -70,7 +70,7 @@ public final class JavaFxApp extends Application {
 
 	@Override
 	public void start(final Stage p_stage) {
-		final var localLabelForClientsList = JavaFxApp.labelForClientsList = new Label("Clients:");
+		final var localLabelForClientsList = JavaFxApp.labelForClientsList = new Label("Phones:");
 		final var localLabelForOptionsList = JavaFxApp.labelForOptionsList = new Label("Options:");
 		final var localListViewForClients = JavaFxApp.listViewForClients = new ListView<>();
 		final var localListViewForOptions = JavaFxApp.listViewForOptions = new ListView<>();
@@ -93,6 +93,19 @@ public final class JavaFxApp extends Application {
 		this.initClientsList();
 		this.initOptionsList();
 		this.initSeparatorButton();
+
+		{
+			double stageWidthRatio;
+			stageWidthRatio = JavaFxApp.stage.getWidth() / 2.8;
+			// (Surprisingly, that *was* the correct number to divide by.)
+
+			localListViewForClients.setPrefWidth(stageWidthRatio);
+			localLabelForClientsList.setPrefWidth(stageWidthRatio);
+
+			stageWidthRatio = JavaFxApp.stage.getWidth() - stageWidthRatio;
+			localListViewForOptions.setPrefWidth(stageWidthRatio);
+			localLabelForOptionsList.setPrefWidth(stageWidthRatio);
+		}
 
 		localStage.setScene(localScene);
 		localStage.show();
@@ -151,7 +164,9 @@ public final class JavaFxApp extends Application {
 		// final var cbckKeyPress = c.getOnKeyPressed();
 		// });
 
-		localPaneRoot.setOnKeyPressed(p_event -> {
+		localPaneRoot.setOnKeyReleased(p_event -> JavaFxApp.pressedKeys.remove(p_event.getCode()));
+
+		JavaFxApp.prependEventHandlerGivenBothExist(localPaneRoot.onKeyPressedProperty(), p_event -> {
 			final KeyCode key = p_event.getCode();
 
 			if (!JavaFxApp.pressedKeys.contains(key))
@@ -165,42 +180,51 @@ public final class JavaFxApp extends Application {
 			final boolean onlyCtrl = ctrl && !(alt || meta || shift);
 			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
 
-			switch (p_event.getCode()) {
+			// We first account for direction based on *actual keys* pressed:
 
-				// TODO Add keyboard manipulation final of list widths.
+			final int directionFactor = switch (p_event.getCode()) {
+				default -> 0; // ...'cause of this guy. CPUs know `* 0` is `0`.
+				case LEFT -> -1;
+				case RIGHT -> 1;
+			};
 
-				case LEFT -> {
-					if (onlyCtrl) {
-					} else if (onlyShiftCtrl) {
-					}
-				}
+			if (directionFactor == 0)
+				return;
 
-				case RIGHT -> {
-					if (onlyCtrl) {
-					} else if (onlyShiftCtrl) {
-					}
-				}
+			final double speedFactor =
+					/* */ (onlyCtrl // Holding only `Ctrl` => slow and steady (`1px`).
+							? 1
+							: (onlyShiftCtrl // With `Shift`, it goes a bit faster (`15px`).
+									? 15
+									: 0)); // If NONE of those keys are active, nothing (`0px`)!
 
-				default -> {
-					return;
-				}
+			final double velocity = directionFactor * speedFactor;
 
-			}
+			final var localLabelForClients = JavaFxApp.labelForClientsList;
+			final var localListViewForClients = JavaFxApp.listViewForClients;
 
+			// final var localLabelForOptions = JavaFxApp.labelForOptionsList;
+			// final var localListViewForOptions = JavaFxApp.listViewForOptions;
+
+			final double widthOfClientElements = Math.max(
+
+					JavaFxApp.stage.getWidth() / 4,
+					localLabelForClients.getPrefWidth() + velocity
+
+			);
+
+			localLabelForClients.setPrefWidth(widthOfClientElements);
+			localListViewForClients.setPrefWidth(widthOfClientElements
+			// Math.min(JavaFxApp.stage.getWidth() / 2,
+			// localListViewForClients.getWidth() + velocity
+			// )
+			);
+
+			// localLabelForOptions.setPrefWidth(localLabelForOptions.getPrefWidth() -
+			// velocity);
+			// localListViewForOptions.setPrefWidth(localListViewForOptions.getWidth() +
+			// velocity);
 		});
-
-		localPaneRoot.setOnKeyReleased(p_event -> JavaFxApp.pressedKeys.remove(p_event.getCode()));
-
-		final var cbckKeyPress = localPaneRoot.getOnKeyPressed();
-		localPaneRoot.setOnKeyPressed(cbckKeyPress == null
-
-				? JavaFxApp::cbckKeyPressedForUndo
-				: p_keyEvent -> {
-					cbckKeyPress.handle(p_keyEvent);
-					JavaFxApp.cbckKeyPressedForUndo(p_keyEvent);
-				}
-
-		);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -211,8 +235,6 @@ public final class JavaFxApp extends Application {
 
 		localListView.setStyle("-fx-background-color: black;");
 		localLabelForClientsList.setStyle("-fx-text-fill: gray;"); // NOSONAR! Can't! It's CSS!
-		localLabelForClientsList.setPrefWidth(JavaFxApp.stage.getWidth() / 2.1);
-		// (Surprisingly, `2.1` *was* the correct number to divide by.)
 
 		final AtomicInteger startId = new AtomicInteger(-1); // Also used for drag status - not just the first index!
 		final AtomicReference<ListCell<String>> startCell = new AtomicReference<>();
@@ -292,19 +314,40 @@ public final class JavaFxApp extends Application {
 				startCell.get().setOnMouseReleased(localCbckMouseReleased);
 			});
 
+			toRet.setFont(JavaFxApp.fontLarge);
+
 			return toRet;
 		});
 
 		localListView.setStyle("-fx-background-color: black;");
 		selectionModel.setSelectionMode(SelectionMode.MULTIPLE);
 
-		localListView.setOnKeyPressed(p_keyEvent -> {
-			final var selectedItems = selectionModel.getSelectedItems();
+		localListView.setOnKeyPressed(p_event -> {
+			final var selectedOption = Option.valueOfLabel(
+					JavaFxApp.listViewForOptions.getSelectionModel().getSelectedItem());
+
+			final boolean alt = p_event.isAltDown();
+			final boolean meta = p_event.isMetaDown();
+			final boolean shift = p_event.isShiftDown();
+			final boolean ctrl = p_event.isControlDown();
+
+			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
 
 			// System.out.println("Key pressed with list-view in focus!");
-			switch (p_keyEvent.getCode()) {
+			switch (p_event.getCode()) {
 
-				case DELETE -> localListView.getItems().removeAll(selectedItems);
+				case INSERT -> JavaFxApp.onSelectionMadeInOptionsList(Option.ADD);
+
+				case DELETE -> {
+					if (!onlyShiftCtrl) {
+						JavaFxApp.onSelectionMadeInOptionsList(Option.REMOVE);
+						return;
+					}
+
+					JavaFxApp.onSelectionMadeInOptionsList(Option.STOP);
+				}
+
+				case ENTER -> JavaFxApp.onSelectionMadeInOptionsList(Option.CONTROLS);
 
 				default -> {
 					//
@@ -339,10 +382,16 @@ public final class JavaFxApp extends Application {
 			optionLabels[i] = options[i].LABEL;
 
 		localListView.setOnKeyPressed(p_event -> {
+			final var clientSelections = JavaFxApp.listViewForClients.getSelectionModel();
+			final var optionSelections = JavaFxApp.listViewForOptions.getSelectionModel();
+
+			final var selectedItems = clientSelections.getSelectedItems();
+			final var selectedOption = Option.valueOfLabel(optionSelections.getSelectedItem());
+
 			switch (p_event.getCode()) {
 
 				case ENTER, SPACE ->
-					JavaFxApp.onSelectionMadeInOptionsList();
+					JavaFxApp.onSelectionMadeInOptionsList(selectedOption);
 
 				default -> {
 					return;
@@ -365,13 +414,19 @@ public final class JavaFxApp extends Application {
 
 					if (p_label != null /* && !p_isEmpty */) {
 						super.setOnMouseClicked(p_event -> {
+							final var clientSelections = JavaFxApp.listViewForClients.getSelectionModel();
+							final var optionSelections = JavaFxApp.listViewForOptions.getSelectionModel();
+
+							final var selectedItems = clientSelections.getSelectedItems();
+							final var selectedOption = Option.valueOfLabel(optionSelections.getSelectedItem());
+
 							//
 							// if (p_event.getPickResult().getIntersectedNode() != this)
 							// return;
 
 							switch (p_event.getButton()) {
 
-								case PRIMARY -> JavaFxApp.onSelectionMadeInOptionsList();
+								case PRIMARY -> JavaFxApp.onSelectionMadeInOptionsList(selectedOption);
 
 								default -> {
 									//
@@ -384,7 +439,7 @@ public final class JavaFxApp extends Application {
 
 						if (!tooltipText.isEmpty()) {
 							final var tooltip = new Tooltip(tooltipText);
-							tooltip.setFont(JavaFxApp.fontForTooltips);
+							tooltip.setFont(JavaFxApp.fontLarge);
 							super.setTooltip(tooltip);
 							tooltip.setShowDelay(Duration.seconds(0.15));
 						}
@@ -398,6 +453,8 @@ public final class JavaFxApp extends Application {
 				}
 
 			};
+
+			toRet.setFont(JavaFxApp.fontLarge);
 
 			return toRet;
 		});
@@ -435,13 +492,20 @@ public final class JavaFxApp extends Application {
 			// System.out.println("DRAGGING!");
 
 			final double dragAmount = p_event.getSceneX() - (localSep.getLayoutX() + (localSep.getWidth() / 2));
-			final double newWidthListView1 = localListViewForClients.getWidth() + dragAmount;
-			final double newWidthListView2 = localListViewForOptions.getWidth() - dragAmount;
+			final double widthOfClientElements = localListViewForClients.getWidth() + dragAmount;
+			final double widthOfOptionElements = localListViewForOptions.getWidth() - dragAmount;
 
-			localListViewForClients.setPrefWidth(newWidthListView1);
-			localListViewForOptions.setPrefWidth(newWidthListView2);
-			JavaFxApp.labelForClientsList.setPrefWidth(newWidthListView1);
-			JavaFxApp.labelForOptionsList.setPrefWidth(newWidthListView2);
+			final double stageHalf = JavaFxApp.stage.getWidth() / 2;
+
+			localListViewForClients.setPrefWidth(Math.min(
+					stageHalf, widthOfClientElements));
+			JavaFxApp.labelForClientsList.setPrefWidth(Math.min(
+					stageHalf, widthOfClientElements));
+
+			localListViewForOptions.setPrefWidth(Math.max(
+					stageHalf, widthOfOptionElements));
+			JavaFxApp.labelForOptionsList.setPrefWidth(Math.max(
+					stageHalf, widthOfOptionElements));
 		};
 
 		localSep.setOnDragDetected(p_eventPressed -> {
@@ -464,26 +528,44 @@ public final class JavaFxApp extends Application {
 		});
 	}
 
-	public static <EventT extends Event> void appendEventHandler(
+	public static <EventT extends Event> void appendEventHandlerGivenBothExist(
 
-			final ObjectProperty<EventHandler<EventT>> p_handlerProperty,
-			final EventHandler<EventT> p_toAppend
+			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
+			final EventHandler<? super EventT> p_toAppend
 
 	) {
-		final EventHandler<EventT> registered = p_handlerProperty.get();
+		if (p_toAppend == null)
+			return;
+
+		final EventHandler<? super EventT> registered = p_handlerProperty.get();
+
+		if (registered == null) {
+			p_handlerProperty.set(p_toAppend);
+			return;
+		}
+
 		p_handlerProperty.set(p_event -> {
 			registered.handle(p_event);
 			p_toAppend.handle(p_event);
 		});
 	}
 
-	public static <EventT extends Event> void prependEventHandler(
+	public static <EventT extends Event> void prependEventHandlerGivenBothExist(
 
-			final ObjectProperty<EventHandler<EventT>> p_handlerProperty,
-			final EventHandler<EventT> p_toPrepend
+			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
+			final EventHandler<? super EventT> p_toPrepend
 
 	) {
-		final EventHandler<EventT> registered = p_handlerProperty.get();
+		if (p_toPrepend == null)
+			return;
+
+		final EventHandler<? super EventT> registered = p_handlerProperty.get();
+
+		if (registered == null) {
+			p_handlerProperty.set(p_toPrepend);
+			return;
+		}
+
 		p_handlerProperty.set(p_event -> {
 			p_toPrepend.handle(p_event);
 			registered.handle(p_event);
@@ -491,24 +573,13 @@ public final class JavaFxApp extends Application {
 	}
 
 	// If I'm not submitting this to an API, `on*()`. Else `cbck*()`.
-	private static void onSelectionMadeInOptionsList() {
-		final var clientSelections = JavaFxApp.listViewForClients.getSelectionModel();
-		final var optionSelections = JavaFxApp.listViewForOptions.getSelectionModel();
-
-		final var selectedItems = clientSelections.getSelectedItems();
-		final var selectedOption = Option.valueOfLabel(optionSelections.getSelectedItem());
-
-		// No guarantee when method exits + reduces "flicker":
-		// optionSelections.clearSelection();
-		// clientSelections.clearSelection(); // Cleared on its own + this call's buggy!
-
-		// System.out.printf("Option `%s` will be applied to `%s`.%n", selectedOption,
-		// selectedItems);
-
-		if (selectedOption == null)
+	private static void onSelectionMadeInOptionsList(final Option p_option) {
+		if (p_option == null)
 			return;
 
-		switch (selectedOption) {
+		final var selections = JavaFxApp.listViewForClients.getSelectionModel().getSelectedItems();
+
+		switch (p_option) {
 
 			case ADD -> {
 				final String clientEntry;
@@ -537,16 +608,16 @@ public final class JavaFxApp extends Application {
 			}
 
 			case REMOVE -> {
-				JavaFxApp.waitingClients.removeAll(selectedItems);
-				JavaFxApp.listViewForClients.getItems().removeAll(selectedItems);
+				JavaFxApp.waitingClients.removeAll(selections);
+				JavaFxApp.listViewForClients.getItems().removeAll(selections);
 				JavaFxApp.listViewForClients.getSelectionModel().clearSelection();
 				// optionSelections.clearSelection();
 
-				System.out.printf("Removed clients %s.%n", selectedItems);
+				System.out.printf("Removed clients %s.%n", selections);
 			}
 
 			case CONTROLS -> {
-				System.out.printf("Controls for clients %s now visible.%n", selectedItems);
+				System.out.printf("Controls for clients %s now visible.%n", selections);
 			}
 
 		}
@@ -559,7 +630,8 @@ public final class JavaFxApp extends Application {
 		final boolean ctrl = p_event.isControlDown();
 
 		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
-		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
+		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NONE of those keys are active, nothing!
+																		// (`0` px!)
 
 		// FIXME: If typing bugs, check *this out!:*
 
