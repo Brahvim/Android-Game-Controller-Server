@@ -166,7 +166,7 @@ public final class JavaFxApp extends Application {
 
 		localPaneRoot.setOnKeyReleased(p_event -> JavaFxApp.pressedKeys.remove(p_event.getCode()));
 
-		JavaFxApp.prependEventHandlerGivenBothExist(localPaneRoot.onKeyPressedProperty(), p_event -> {
+		JavaFxApp.prependEventHandler(localPaneRoot.onKeyPressedProperty(), p_event -> {
 			final KeyCode key = p_event.getCode();
 
 			if (!JavaFxApp.pressedKeys.contains(key))
@@ -465,34 +465,25 @@ public final class JavaFxApp extends Application {
 
 	private void initSeparatorButton() {
 		final var localSep = JavaFxApp.buttonSeparator;
+		final var localLabelForClients = JavaFxApp.labelForClientsList;
 		final var localListViewForClients = JavaFxApp.listViewForClients;
-		final var localListViewForOptions = JavaFxApp.listViewForOptions;
 
 		localSep.setFocusTraversable(false);
 		localSep.setCursor(Cursor.OPEN_HAND);
-		localSep.setStyle("-fx-background-color: rgb(50, 50, 50);");
 		localSep.setPrefHeight(JavaFxApp.PRIMARY_SCREEN_HEIGHT);
+		localSep.setStyle("-fx-background-color: rgb(50, 50, 50);");
 
-		final AtomicLong lastClickTime = new AtomicLong();
-		final AtomicBoolean isDragging = new AtomicBoolean();
+		final var lastClickTime = new AtomicLong();
+		final var isDragging = new AtomicBoolean();
 
 		final EventHandler<MouseEvent> localCbckMouseDrag = p_event -> {
 			if (!isDragging.get())
 				return;
 
-			// System.out.println("DRAGGING!");
+			final double mouseX = p_event.getSceneX();
 
-			final double dragAmount = p_event.getSceneX() - (localSep.getLayoutX() + (localSep.getWidth() / 2));
-			final double widthOfClientElements = localListViewForClients.getWidth() + dragAmount;
-			final double widthOfOptionElements = localListViewForOptions.getWidth() - dragAmount;
-
-			final double stageHalf = JavaFxApp.stage.getWidth() / 2;
-			final double stageQuart = JavaFxApp.stage.getWidth() / 4;
-
-			localListViewForClients.setPrefWidth(Math.max(
-					stageQuart, widthOfClientElements));
-			JavaFxApp.labelForClientsList.setPrefWidth(Math.max(
-					stageQuart, widthOfClientElements));
+			localLabelForClients.setPrefWidth(mouseX);
+			localListViewForClients.setPrefWidth(mouseX);
 		};
 
 		localSep.setOnDragDetected(p_eventPressed -> {
@@ -515,7 +506,7 @@ public final class JavaFxApp extends Application {
 		});
 	}
 
-	public static <EventT extends Event> void appendEventHandlerGivenBothExist(
+	public static <EventT extends Event> void appendEventHandler(
 
 			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
 			final EventHandler<? super EventT> p_toAppend
@@ -537,7 +528,7 @@ public final class JavaFxApp extends Application {
 		});
 	}
 
-	public static <EventT extends Event> void prependEventHandlerGivenBothExist(
+	public static <EventT extends Event> void prependEventHandler(
 
 			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
 			final EventHandler<? super EventT> p_toPrepend
