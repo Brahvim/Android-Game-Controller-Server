@@ -29,6 +29,12 @@ public class Backend {
 
 	public static void shutdown() {
 		Backend.BOOL_ATOMIC_EDT_SHUTDOWN_NOTIFIER.set(true);
+
+		try {
+			Backend.EDT.join();
+		} catch (final InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 }

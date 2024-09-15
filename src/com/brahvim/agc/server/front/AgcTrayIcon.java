@@ -12,18 +12,29 @@ import java.awt.image.BufferedImage;
 
 import com.brahvim.agc.server.ExitCode;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener.Change;
+import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 
 public class AgcTrayIcon {
 
-	public static final PopupMenu MENU = AgcTrayIcon.tryCreating();
 	public static final Font FONT_LARGE = new Font("Courier", Font.BOLD, 20);
+
+	static final ObservableList<MenuItem> listMenuItems = FXCollections.observableArrayList();
+
+	private static PopupMenu menuInstance;
 
 	private AgcTrayIcon() {
 		throw new IllegalAccessError();
 	}
 
 	public static void load() {
+		AgcTrayIcon.menuInstance = AgcTrayIcon.tryCreating();
+	}
+
+	public static PopupMenu getMenuInstance() {
+		return AgcTrayIcon.menuInstance;
 	}
 
 	public static String getString(final String p_property) {
@@ -80,8 +91,18 @@ public class AgcTrayIcon {
 
 		for (final MenuItem i : menuItems) {
 			i.setFont(AgcTrayIcon.FONT_LARGE);
+			AgcTrayIcon.listMenuItems.add(i);
 			menu.add(i);
 		}
+
+		AgcTrayIcon.listMenuItems.addAll(menuItems);
+		AgcTrayIcon.listMenuItems.addListener((final Change<? extends MenuItem> p_change) -> {
+			final var list = p_change.getList();
+			final var max = p_change.getTo();
+
+			for (int i = p_change.getFrom(); i < max; ++i)
+				menu.add(list.get(i));
+		});
 
 		// menu.setFont(AgcTrayIcon.FONT_LARGE);
 

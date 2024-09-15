@@ -6,15 +6,20 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 
+import com.brahvim.agc.server.front.App;
+
 // No, I'm not making this `AutoCloseable`! -v-
 public final class Client {
 
 	// region Fields.
-	private static final ArrayList<Thread> listThreadsUdp = new ArrayList<>();
-	private static final ArrayList<DatagramSocket> listSocksUdp = new ArrayList<>();
-	private static final IdentityHashMap<Integer, Socket> mapSocksSsl = new IdentityHashMap<>();
+	/* NOSONAR */ public static final ArrayList<Thread> listThreadsUdp = new ArrayList<>(1);
+	/* NOSONAR */ public static final ArrayList<DatagramSocket> listSocksUdp = new ArrayList<>(1);
+	/* NOSONAR */ public static final IdentityHashMap<Integer, String> mapUiEntry = new IdentityHashMap<>(1);
+	/* NOSONAR */ public static final IdentityHashMap<Integer, Socket> mapSocksSsl = new IdentityHashMap<>(1);
 
-	private static final ArrayDeque<Integer> listFreeIndices = new ArrayDeque<>();
+	private static final ArrayDeque<Integer> queueFreeIndices = new ArrayDeque<>(1);
+
+	private static int count = 1;
 	// private static final AtomicBoolean inCreateOrDestroy = new AtomicBoolean();
 	// endregion
 
@@ -22,20 +27,28 @@ public final class Client {
 
 	static {
 		// `0` shall be `null`. ...The `null`-object pattern. <Sigh>.
-		Client.listFreeIndices.add(1);
+		Client.queueFreeIndices.add(1);
 
-		Client.listSocksUdp.add(null);
+		Client.mapUiEntry.put(0, null);
 		Client.mapSocksSsl.put(0, null);
+
 		Client.listThreadsUdp.add(null);
+		Client.listSocksUdp.add(null);
 	}
 
 	public Client() {
 		this.id = Client.createClient();
 	}
 
+	public Client(final String p_uiEntry) {
+		this();
+		this.setUiEntry(p_uiEntry);
+	}
+
 	public synchronized void destroy() {
 		// synchronized (Client.waitForOtherCreateOrDestroy()) {
 		// `Map`s:
+		Client.mapUiEntry.remove(this.id);
 		Client.mapSocksSsl.remove(this.id);
 		// Client.idToSoaIndexMap.remove(index);
 
@@ -43,12 +56,20 @@ public final class Client {
 		Client.listSocksUdp.set(this.id, null);
 		Client.listThreadsUdp.set(this.id, null);
 
-		Client.listFreeIndices.add(this.id);
+		Client.queueFreeIndices.add(this.id);
 		// Client.endCurrentCreateOrDestroy();
 		// }
 	}
 
 	// region Getters.
+	public static int getCount() {
+		return Client.count;
+	}
+
+	public String getUiEntry() {
+		return Client.mapUiEntry.get(this.id);
+	}
+
 	public Socket getSslSocket() {
 		return Client.mapSocksSsl.get(this.id);
 	}
@@ -63,6 +84,10 @@ public final class Client {
 	// endregion
 
 	// region Setters.
+	public String setUiEntry(final String p_entry) {
+		return Client.mapUiEntry.put(this.id, p_entry);
+	}
+
 	public synchronized Socket setSslSocket(final Socket p_sslSocket) {
 		return Client.mapSocksSsl.put(this.id, p_sslSocket);
 	}
@@ -75,16 +100,6 @@ public final class Client {
 		return Client.listSocksUdp.set(this.id, p_udpSocket);
 	}
 	// endregion
-
-	private static void ensureArrayListSize(final ArrayList<?> p_list, final Integer p_minSize) {
-		// `Collection::addAll()`? Well, no!
-		// Putting my own `Collection` subclass didn't exactly work out, and `List.of()`
-		// won't create a `List` with `null`s! (See its use of `ImmutableCollections`!)
-		p_list.ensureCapacity(p_minSize);
-
-		while (p_list.size() <= p_minSize)
-			p_list.add(null);
-	}
 
 	// private static AtomicBoolean waitForOtherCreateOrDestroy() {
 	// synchronized (Client.inCreateOrDestroy) {
@@ -108,15 +123,14 @@ public final class Client {
 
 	private static synchronized Integer createClient() {
 		// synchronized (Client.waitForOtherCreateOrDestroy()) {
-		final Integer soaIndex = Client.listSocksUdp.size();
-		Integer id = Client.listFreeIndices.poll();
+		Integer id = Client.queueFreeIndices.poll();
 
 		if (id == null)
-			id = soaIndex;
+			id = ++Client.count;
 
 		// Client.idToSoaIndexMap.put(myId, soaIndex);
-		Client.ensureArrayListSize(Client.listSocksUdp, soaIndex);
-		Client.ensureArrayListSize(Client.listThreadsUdp, soaIndex);
+		App.ensureArrayListSize(Client.listSocksUdp, id);
+		App.ensureArrayListSize(Client.listThreadsUdp, id);
 
 		return id;
 	}

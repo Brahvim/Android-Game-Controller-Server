@@ -159,7 +159,7 @@ public final class StringTable {
 						// if (parsedContent.charAt(newLineCharPos - 1) == '\\')
 						// continue;
 
-						for (int i = 0; i < 2; i++)
+						for (int i = 0; i < 2; ++i)
 							lineParsed.deleteCharAt(posNewLineDelim);
 						lineParsed.insert(posNewLineDelim, '\n');
 					}

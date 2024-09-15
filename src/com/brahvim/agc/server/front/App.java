@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.StringTable;
 import com.brahvim.agc.server.back.Backend;
+import com.brahvim.agc.server.back.Client;
 import com.brahvim.agc.server.back.EventAwaitOneClient;
 
 import javafx.application.Application;
@@ -69,7 +70,7 @@ public final class App extends Application {
 	}).get();
 
 	static final ArrayList<KeyCode> pressedKeys = new ArrayList<>();
-	static final ArrayList<String> waitingClients = new ArrayList<>();
+	static final ArrayList<Client> waitingClients = new ArrayList<>();
 
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
 	static Stage stage = null; // NOSONAR!
@@ -128,6 +129,16 @@ public final class App extends Application {
 		});
 	}
 
+	public static void ensureArrayListSize(final ArrayList<?> p_list, final Integer p_minSize) {
+		// `Collection::addAll()`? Well, no!
+		// Putting my own `Collection` subclass didn't exactly work out, and `List.of()`
+		// won't create a `List` with `null`s! (See its use of `ImmutableCollections`!)
+		p_list.ensureCapacity(p_minSize);
+
+		while (p_list.size() <= p_minSize)
+			p_list.add(null);
+	}
+
 	public static void showStageFocusedAndCentered(final Stage p_stage) {
 		Platform.runLater(() -> {
 			p_stage.show();
@@ -161,6 +172,7 @@ public final class App extends Application {
 		if (p_option == null)
 			return;
 
+		final var items = App.listViewClients.getItems();
 		final var selections = App.listViewClients.getSelectionModel().getSelectedItems();
 
 		switch (p_option) {
@@ -178,22 +190,37 @@ public final class App extends Application {
 
 				);
 
-				App.waitingClients.add(clientEntry);
-				App.listViewClients.getItems().add(clientEntry);
+				App.waitingClients.add(new Client(clientEntry));
+
+				items.add(clientEntry);
 				System.out.printf("Added client [%s].%n", clientEntry);
 			}
 
 			case STOP -> {
-				App.listViewClients.getItems().removeAll(App.waitingClients);
 				Backend.INT_CLIENTS_LEFT.set(0);
+
+				for (final var c : App.waitingClients) {
+					final String uiEntry = c.getUiEntry();
+					items.remove(uiEntry);
+					c.destroy();
+				}
+
 				App.waitingClients.clear();
 
 				System.out.println("Now awaiting no clients.");
 			}
 
 			case REMOVE -> {
-				App.waitingClients.removeAll(selections);
-				App.listViewClients.getItems().removeAll(selections);
+				for (final var c : App.waitingClients) {
+					if (!selections.contains(c.getUiEntry()))
+						continue;
+
+					c.destroy();
+				}
+
+				App.waitingClients.removeIf(c -> selections.contains(c.getUiEntry()));
+
+				items.removeAll(selections);
 				App.listViewClients.getSelectionModel().clearSelection();
 				// optionSelections.clearSelection();
 
@@ -271,7 +298,7 @@ public final class App extends Application {
 	@Override
 	public void stop() throws Exception {
 		Backend.shutdown();
-		System.exit(1); // COULD BE a JavaFX crash!
+		// System.exit(1); // COULD BE a JavaFX crash!
 	}
 
 	@Override
@@ -362,7 +389,7 @@ public final class App extends Application {
 
 	private void initRootPane() {
 		final var localPaneRoot = App.paneRoot;
-		localPaneRoot.setStyle("-fx-background-color: black;"); // NOSONAR! Repeated 9 times, but it's CSS!
+		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Repeated 9 times, but it's CSS!
 
 		// JavaFxApp.paneRoot.getChildren().forEach(c -> {
 		// final var cbckKeyPress = c.getOnKeyPressed();
@@ -433,12 +460,7 @@ public final class App extends Application {
 			// final var localLabelOptions = JavaFxApp.labelForOptionsList;
 			// final var localListViewOptions = JavaFxApp.listViewForOptions;
 
-			final double widthOfClientElements = Math.max(
-
-					App.stage.getWidth() / 4,
-					localLabelClients.getPrefWidth() + velocity
-
-			);
+			final double widthOfClientElements = localLabelClients.getPrefWidth() + velocity;
 
 			localLabelClients.setPrefWidth(widthOfClientElements);
 			localListViewClients.setPrefWidth(widthOfClientElements);
@@ -455,11 +477,11 @@ public final class App extends Application {
 		final var localLabelClientsList = App.labelClientsList;
 		final var localSelectionModel = localListView.getSelectionModel();
 
-		localListView.setStyle("-fx-background-color: black;");
+		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localLabelClientsList.setStyle("-fx-text-fill: gray;"); // NOSONAR! Can't! It's CSS!
 
-		final AtomicInteger startId = new AtomicInteger(-1); // Also used for drag status - not just the first index!
-		final AtomicReference<ListCell<String>> startCell = new AtomicReference<>();
+		final var startId = new AtomicInteger(-1); // Also used for drag status - not just the first index!
+		final var startCell = new AtomicReference<ListCell<String>>();
 
 		localListView.setCellFactory(p_listView -> {
 			final var toRet = new ListCell<String>() {
@@ -469,9 +491,9 @@ public final class App extends Application {
 					super.updateItem(p_label, p_isEmpty);
 
 					if (super.isSelected())
-						super.setStyle("-fx-background-color: black; -fx-text-fill: white;");
+						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: rgb(255, 255, 255);");
 					else
-						super.setStyle("-fx-background-color: black; -fx-text-fill: grey;");
+						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: #808080;");
 
 					if (p_label != null /* && !p_isEmpty */) {
 						super.setCursor(Cursor.CROSSHAIR);
@@ -541,7 +563,7 @@ public final class App extends Application {
 			return toRet;
 		});
 
-		localListView.setStyle("-fx-background-color: black;");
+		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localSelectionModel.setSelectionMode(SelectionMode.MULTIPLE);
 
 		localListView.setOnKeyPressed(p_event -> {
@@ -628,7 +650,7 @@ public final class App extends Application {
 			final boolean inFocus = p_newValue; // JavaFX ain't settin' it `null`!...
 			localLabelClientsList.setStyle(inFocus
 
-					? "-fx-text-fill: white;"
+					? "-fx-text-fill: rgb(255, 255, 255);"
 					: "-fx-text-fill: gray;"
 
 			);
@@ -640,7 +662,7 @@ public final class App extends Application {
 		final var localLabelOptionsList = App.labelOptionsList;
 
 		localListView.requestFocus();
-		localListView.setStyle("-fx-background-color: black;");
+		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;");
 
 		final Option[] options = Option.values();
@@ -676,9 +698,9 @@ public final class App extends Application {
 					super.updateItem(p_label, p_isEmpty);
 
 					if (super.isFocused() && localListView.isFocused())
-						super.setStyle("-fx-background-color: black; -fx-text-fill: white;");
+						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: rgb(255, 255, 255);");
 					else
-						super.setStyle("-fx-background-color: black; -fx-text-fill: grey;");
+						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: #808080;");
 
 					if (p_label != null /* && !p_isEmpty */) {
 						super.setOnMouseClicked(p_event -> {
@@ -731,7 +753,7 @@ public final class App extends Application {
 			final boolean inFocus = p_newValue; // JavaFX ain't settin' it `null`!...
 			localLabelOptionsList.setStyle(inFocus
 
-					? "-fx-text-fill: white;"
+					? "-fx-text-fill: rgb(255, 255, 255);"
 					: "-fx-text-fill: gray;"
 
 			);

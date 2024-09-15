@@ -131,7 +131,7 @@ public final class StageLayoutChooser {
 		final Button localButtonAdd = StageLayoutChooser.buttonAddLayout;
 		final Button localButtonDel = StageLayoutChooser.buttonDelLayout;
 
-		localPaneRoot.setStyle("-fx-background-color: black;"); // NOSONAR! Dis CSS!
+		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Dis CSS!
 
 		localPaneRoot.widthProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			final double side = p_newValue.doubleValue();
@@ -155,7 +155,7 @@ public final class StageLayoutChooser {
 		localLabel.setAlignment(Pos.CENTER);
 		localLabel.setFont(App.FONT_LARGE);
 		localLabel.setPrefWidth(App.PRIMARY_SCREEN_WIDTH);
-		localLabel.setStyle("-fx-background-color: black; -fx-text-fill: white");
+		localLabel.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: rgb(255, 255, 255)");
 	}
 
 	private static void initAddButton() {
@@ -164,7 +164,7 @@ public final class StageLayoutChooser {
 		localButton.setCursor(Cursor.HAND);
 		localButton.setFont(App.FONT_LARGE);
 		localButton.setLayoutY(StageLayoutChooser.paneButtons.getTranslateY());
-		localButton.setStyle("-fx-background-color: grey; -fx-text-fill: darkblue");
+		localButton.setStyle("-fx-background-color: #808080; -fx-text-fill: darkblue");
 	}
 
 	private static void initDelButton() {
@@ -173,13 +173,13 @@ public final class StageLayoutChooser {
 		localButton.setCursor(Cursor.HAND);
 		localButton.setFont(App.FONT_LARGE);
 		localButton.setLayoutY(StageLayoutChooser.paneButtons.getTranslateY());
-		localButton.setStyle("-fx-background-color: grey; -fx-text-fill: darkred");
+		localButton.setStyle("-fx-background-color: #808080; -fx-text-fill: darkred");
 	}
 
 	private static void initLayoutsList() {
 		final var localListView = StageLayoutChooser.listViewLayouts;
 
-		localListView.setStyle("-fx-background-color: black;");
+		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 	}
 
 }

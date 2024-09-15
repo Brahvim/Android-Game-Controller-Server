@@ -42,6 +42,10 @@ public final class EventDispatchThread {
 		}
 	}
 
+	public final void join() throws InterruptedException {
+		this.thread.join();
+	}
+
 	private final void edtLoop() {
 		while (!this.boolAtomicShutdownNotifier.get()) {
 			final Event event;
