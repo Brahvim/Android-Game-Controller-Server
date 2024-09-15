@@ -2,13 +2,12 @@ package com.brahvim.agc.server.front;
 
 import java.util.IdentityHashMap;
 
-import com.brahvim.agc.server.App;
-
 public enum Option {
 
 	ADD(),
 	STOP(),
 	REMOVE(),
+	LAYOUT(),
 	CONTROLS(),
 
 	/* */ ;
@@ -26,8 +25,8 @@ public enum Option {
 
 	private Option() {
 		final String myName = this.name();
-		this.LABEL = App.STRINGS.getString("Option", myName);
-		this.TOOLTIP = App.STRINGS.getString("Tooltip", myName);
+		this.LABEL = App.STRINGS.getString("OptionsList", myName);
+		this.TOOLTIP = App.STRINGS.getString("Tooltips", myName);
 	}
 
 	public static Option valueOfLabel(final String p_label) {

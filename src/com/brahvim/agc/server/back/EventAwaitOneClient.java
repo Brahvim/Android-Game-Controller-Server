@@ -6,10 +6,10 @@ import java.net.SocketTimeoutException;
 
 import javax.net.ssl.SSLServerSocketFactory;
 
-import com.brahvim.agc.server.App;
 import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.event.Event;
 import com.brahvim.agc.server.event.EventType;
+import com.brahvim.agc.server.front.App;
 
 public final class EventAwaitOneClient {
 
@@ -41,7 +41,7 @@ public final class EventAwaitOneClient {
 				Backend.INT_CLIENTS_LEFT.getAndDecrement();
 			} catch (final IOException e) {
 				if (e instanceof SocketTimeoutException) { // NOSONAR! Not again!
-					// System.out.println("Socket timed out.");
+					// System.err.println("Socket timed out.");
 					break;
 					// App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
 				}

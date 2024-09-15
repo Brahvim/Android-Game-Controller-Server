@@ -181,7 +181,7 @@ public final class StringTable {
 				}
 
 			} catch (final IOException e) {
-				System.out.println("Failed to read string table file!");
+				System.err.println("Failed to read string table file!");
 				e.printStackTrace();
 			}
 		}

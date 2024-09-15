@@ -1,6 +1,5 @@
 package com.brahvim.agc.server.front;
 
-import com.brahvim.agc.server.App;
 import com.brahvim.agc.server.ExitCode;
 
 import javafx.beans.value.ChangeListener;
@@ -62,8 +61,8 @@ final class WaitingDialogBuilder {
 
 	private static void sendDialogToCenter(final Dialog<?> p_dialog) {
 		// I was using the `Stage` instance instead. Oops!:
-		p_dialog.setX((JavaFxApp.PRIMARY_SCREEN_RECT.getWidth() - p_dialog.getWidth()) / 2);
-		p_dialog.setY((JavaFxApp.PRIMARY_SCREEN_RECT.getHeight() - p_dialog.getHeight()) / 2);
+		p_dialog.setX((App.PRIMARY_SCREEN_RECT.getWidth() - p_dialog.getWidth()) / 2);
+		p_dialog.setY((App.PRIMARY_SCREEN_RECT.getHeight() - p_dialog.getHeight()) / 2);
 	}
 
 	private static void addButtonsToPane(final DialogPane p_pane) {

@@ -6,5 +6,9 @@
     "java.project.referencedLibraries": [
         "lib/**/*.jar"
     ],
-    "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xms128M -Xmx1024M"
+    "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xms128M -Xmx1024M",
+    "cSpell.words": [
+        "darkred",
+        "Noto"
+    ]
 }
