@@ -55,7 +55,27 @@ public final class StringTable {
 	 * returned.
 	 */
 	public final String getFormatted(final String p_section, final String p_property, final Object... p_args) {
-		return String.format(this.getString(p_section, p_property), p_args);
+		final String property;
+
+		synchronized (this.table) {
+			final HashMap<String, String> section = this.table.get(p_section);
+
+			if (section == null) {
+				System.err.printf("String table section `%s` not found!%n", p_section);
+				return "";
+			}
+
+			synchronized (section) {
+				property = section.get(p_property);
+			}
+		}
+
+		if (property == null) {
+			System.err.printf("String table property `%s` not found in section `%s`!%n", p_property, p_section);
+			return "";
+		}
+
+		return String.format(property, p_args);
 	}
 
 	/**

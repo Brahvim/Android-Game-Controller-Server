@@ -81,9 +81,30 @@ public final class App extends Application {
 	static Button buttonSeparator = null; // NOSONAR!
 	static Label labelClientsList = null; // NOSONAR!
 	static Label labelOptionsList = null; // NOSONAR!
-	static ListView<String> listViewClients = null; // NOSONAR!
-	static ListView<String> listViewOptions = null; // NOSONAR!
+	static ListView<Client> listViewClients = null; // NOSONAR!
+	static ListView<Option> listViewOptions = null; // NOSONAR!
 	// endregion
+
+	// region Static methods.
+	public static void main(final String... p_args) {
+		// PS Remember to *somehow get these arguments to the JVM* for JavaFX:
+		// `--module-path ./lib/openjfx --add-modules javafx.controls,javafx.fxml`
+		// (I don't really need the `javafx.fxml` module for this app, but anyway.)
+
+		new Thread(Application::launch, "AGC:FX_APP_LAUNCHER").start();
+		EventQueue.invokeLater(AgcTrayIcon::getMenu); // `SwingUtilities.invokeLater()` throws up :/
+	}
+
+	public static void exit(final ExitCode p_exitCode) {
+		System.out.print(ExitCode.ERROR_MESSAGE_PREFIX);
+		System.out.println(p_exitCode.errorMessage);
+		System.exit(p_exitCode.ordinal());
+	}
+
+	public static void centerStage(final Stage p_stage) {
+		p_stage.setX((App.PRIMARY_SCREEN_WIDTH / 2) - (p_stage.getWidth() / 2));
+		p_stage.setY((App.PRIMARY_SCREEN_HEIGHT / 2) - (p_stage.getHeight() / 2));
+	}
 
 	public static <EventT extends Event> void appendEventHandler(
 
@@ -147,26 +168,6 @@ public final class App extends Application {
 		});
 	}
 
-	public static void centerStage(final Stage p_stage) {
-		p_stage.setX((App.PRIMARY_SCREEN_WIDTH / 2) - (p_stage.getWidth() / 2));
-		p_stage.setY((App.PRIMARY_SCREEN_HEIGHT / 2) - (p_stage.getHeight() / 2));
-	}
-
-	public static void main(final String... p_args) {
-		// PS Remember to *somehow get these arguments to the JVM* for JavaFX:
-		// `--module-path ./lib/openjfx --add-modules javafx.controls,javafx.fxml`
-		// (I don't really need the `javafx.fxml` module for this app, but anyway.)
-
-		new Thread(Application::launch, "AGC:FX_APP_LAUNCHER").start();
-		EventQueue.invokeLater(AgcTrayIcon::load); // `SwingUtilities.invokeLater()` throws up :/
-	}
-
-	public static void exit(final ExitCode p_exitCode) {
-		System.out.print(ExitCode.ERROR_MESSAGE_PREFIX);
-		System.out.println(p_exitCode.errorMessage);
-		System.exit(p_exitCode.ordinal());
-	}
-
 	// If I'm not submitting this to an API, `on*()`. Else `cbck*()`.
 	private static void onSelectionMadeInOptionsList(final Option p_option) {
 		if (p_option == null)
@@ -178,30 +179,25 @@ public final class App extends Application {
 		switch (p_option) {
 
 			case ADD -> {
-				final String clientEntry;
 				Backend.EDT.publish(EventAwaitOneClient.create());
+				final Client client = new Client();
 
-				clientEntry = App.STRINGS.getFormatted(
+				client.setUiEntry(App.STRINGS.getFormatted(
 
-						"ClientsList",
-						"waiting",
-						1 + Backend.INT_CLIENTS_LEFT.getAndIncrement(),
-						0
+						"ClientsList", "waiting", Backend.INT_CLIENTS_LEFT.incrementAndGet(), 0
 
-				);
+				));
 
-				App.waitingClients.add(new Client(clientEntry));
-
-				items.add(clientEntry);
-				System.out.printf("Added client [%s].%n", clientEntry);
+				System.out.printf("Added client [%s].%n", client.getUiEntry());
+				App.waitingClients.add(client);
+				items.add(client);
 			}
 
 			case STOP -> {
 				Backend.INT_CLIENTS_LEFT.set(0);
 
 				for (final var c : App.waitingClients) {
-					final String uiEntry = c.getUiEntry();
-					items.remove(uiEntry);
+					items.remove(c);
 					c.destroy();
 				}
 
@@ -211,14 +207,10 @@ public final class App extends Application {
 			}
 
 			case REMOVE -> {
-				for (final var c : App.waitingClients) {
-					if (!selections.contains(c.getUiEntry()))
-						continue;
+				App.waitingClients.removeIf(selections::contains);
 
+				for (final var c : selections)
 					c.destroy();
-				}
-
-				App.waitingClients.removeIf(c -> selections.contains(c.getUiEntry()));
 
 				items.removeAll(selections);
 				App.listViewClients.getSelectionModel().clearSelection();
@@ -294,6 +286,7 @@ public final class App extends Application {
 		localLabelOptionsList.setPrefWidth((localLabelOptionsList.getPrefWidth() / p_oldValue) * p_newValue);
 		localLabelClientsList.setPrefWidth((localLabelClientsList.getPrefWidth() / p_oldValue) * p_newValue);
 	}
+	// endregion
 
 	@Override
 	public void stop() throws Exception {
@@ -344,7 +337,7 @@ public final class App extends Application {
 		localStage.setScene(localScene);
 		localStage.show();
 
-		StageLayoutChooser.show();
+		// StageLayoutChooser.show();
 
 		localStage.setX((App.PRIMARY_SCREEN_WIDTH / 2) - (localStage.getWidth() / 2));
 		localStage.setY((App.PRIMARY_SCREEN_HEIGHT / 2) - (localStage.getHeight() / 2));
@@ -475,102 +468,26 @@ public final class App extends Application {
 	private void initClientsList() {
 		final var localListView = App.listViewClients;
 		final var localLabelClientsList = App.labelClientsList;
-		final var localSelectionModel = localListView.getSelectionModel();
 
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localLabelClientsList.setStyle("-fx-text-fill: gray;"); // NOSONAR! Can't! It's CSS!
 
-		final var startId = new AtomicInteger(-1); // Also used for drag status - not just the first index!
-		final var startCell = new AtomicReference<ListCell<String>>();
+		// Used to track dragging:
+		final var startId = new AtomicInteger(-1); // Also used for drag **status** - not just the first index!
+		final var startCell = new AtomicReference<ListCell<Client>>();
 
-		localListView.setCellFactory(p_listView -> {
-			final var toRet = new ListCell<String>() {
+		final var localListViewSelectionModel = localListView.getSelectionModel();
 
-				@Override
-				protected void updateItem(final String p_label, final boolean p_isEmpty) {
-					super.updateItem(p_label, p_isEmpty);
+		localListViewSelectionModel.setSelectionMode(SelectionMode.MULTIPLE);
 
-					if (super.isSelected())
-						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: rgb(255, 255, 255);");
-					else
-						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: #808080;");
-
-					if (p_label != null /* && !p_isEmpty */) {
-						super.setCursor(Cursor.CROSSHAIR);
-						super.setText(p_label);
-					} else { // This CLEARS text when it goes away!
-						super.setCursor(Cursor.DEFAULT);
-						super.setText(null);
-					}
-				}
-
-			};
-
-			toRet.setOnMousePressed(p_event -> {
-				final int myId = toRet.getIndex();
-				final String myText = toRet.getText();
-				final var selectedItems = localSelectionModel.getSelectedItems();
-
-				startId.set(myId);
-				startCell.set(toRet);
-
-				// try {
-
-				// FIXME: If newer JavaFX fixes this, use next line (genuine solution):
-				selectedItems.remove(myText); // Surprisingly fully reliable!
-				// selectionModel.clearAndSelect(myId); // Surprisingly fails every single time.
-
-				// } catch (final Exception e) {
-				// Handling this guy causes this solution to fail!
-				// }
-
-				toRet.setOnMouseReleased(null);
-				System.out.printf("Drag began! Start-ID: `%d`, Text: `%s`.%n", startId.get(), myText);
-			});
-
-			// Removed on drag begin, added back upon drag end:
-			final EventHandler<MouseEvent> localCbckMouseReleased = p_event -> {
-				System.out.printf("Mouse released for `%s`.%n", p_event.getSource());
-
-				final int myId = ((ListCell<String>) p_event.getSource()).getIndex();
-				final int localStartId = startId.get();
-
-				if (localStartId == -1) {
-					System.err.println("Drag end rejected: Invalid start.");
-					return;
-				}
-
-				if (localStartId == myId) {
-					System.err.println("Drag end rejected: Start and end same.");
-					return;
-				}
-
-				// Remember: Equality case for this already caused a return:
-				final int endId = myId + (localStartId > myId ? -1 : 1);
-
-				startId.set(-1);
-				localSelectionModel.selectRange(localStartId, endId);
-				System.out.printf("Drag ended! Start-ID: `%d`, End-ID: `%d`.%n", localStartId, endId);
-			};
-
-			toRet.setOnMouseReleased(p_event -> {
-				localCbckMouseReleased.handle(p_event);
-				startCell.get().setOnMouseReleased(localCbckMouseReleased);
-			});
-
-			toRet.setFont(App.FONT_LARGE);
-
-			return toRet;
-		});
+		final var localListViewSelections = localListViewSelectionModel.getSelectedItems();
 
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
-		localSelectionModel.setSelectionMode(SelectionMode.MULTIPLE);
-
 		localListView.setOnKeyPressed(p_event -> {
 			final var localListViewOptions = App.listViewOptions;
 
 			final var model = localListViewOptions.getSelectionModel();
-			final var option = Option.valueOfLabel(model.getSelectedItem());
+			final var option = model.getSelectedItem();
 
 			final boolean alt = p_event.isAltDown();
 			final boolean meta = p_event.isMetaDown();
@@ -645,7 +562,105 @@ public final class App extends Application {
 				}
 			}
 		});
+		localListView.setCellFactory(p_listView -> {
+			final var toRet = new ListCell<Client>() {
 
+				// Default implementation in `ListCell`:
+
+				/*
+				 * ```java
+				 * protected void updateItem(final T item, final boolean empty) {
+				 * ******* this.setItem(item);
+				 * ******* this.setEmpty(empty);
+				 * ******* if (empty && this.isSelected()) {
+				 * ********** this.updateSelected(false);
+				 * ******* }
+				 * *** }
+				 * ```
+				 */
+
+				@Override
+				protected void updateItem(final Client p_client, final boolean p_isEmpty) {
+					super.updateItem(p_client, p_isEmpty);
+
+					if (p_isEmpty)
+						localListViewSelectionModel.clearSelection();
+
+					if (super.isSelected())
+						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: rgb(255, 255, 255);");
+					else
+						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: #808080;");
+
+					// This CLEARS text when it goes away!
+					if (p_isEmpty || p_client == null) { // Frequent condition first.
+						super.setCursor(Cursor.DEFAULT);
+						super.setText(null);
+						return;
+					}
+
+					final String uiEntry = p_client.getUiEntry();
+					super.setText(uiEntry);
+					super.setCursor(Cursor.CROSSHAIR);
+				}
+
+			};
+
+			toRet.setOnMousePressed(p_event -> {
+				final var myId = toRet.getIndex();
+				final var myText = toRet.getText();
+				final var myClient = toRet.getItem();
+
+				startCell.set(toRet);
+				startId.set(myId);
+
+				// try {
+
+				// FIXME: If newer JavaFX fixes this, use next line (genuine solution):
+				localListViewSelections.remove(myClient); // Surprisingly fully reliable!
+				localListViewSelectionModel.select(myId); // Surprisingly fails every single time.
+
+				// } catch (final Exception e) {
+				// Handling this guy causes this solution to fail!
+				// }
+
+				toRet.setOnMouseReleased(null);
+				System.out.printf("Drag began! Start-ID: `%d`, Text: `%s`.%n", startId.get(), myText);
+			});
+
+			// Removed on drag begin, added back upon drag end:
+			final EventHandler<MouseEvent> localCbckMouseReleased = p_event -> {
+				System.out.printf("Mouse released for `%s`.%n", p_event.getSource());
+
+				final int myId = ((ListCell<String>) p_event.getSource()).getIndex();
+				final int localStartId = startId.get();
+
+				if (localStartId == -1) {
+					System.err.println("Drag end rejected: Invalid start.");
+					return;
+				}
+
+				if (localStartId == myId) {
+					System.err.println("Drag end rejected: Start and end same.");
+					return;
+				}
+
+				// Remember: Equality case for this already caused a return:
+				final int endId = myId + (localStartId > myId ? -1 : 1);
+
+				startId.set(-1);
+				localListViewSelectionModel.selectRange(localStartId, endId);
+				System.out.printf("Drag ended! Start-ID: `%d`, End-ID: `%d`.%n", localStartId, endId);
+			};
+
+			toRet.setOnMouseReleased(p_event -> {
+				localCbckMouseReleased.handle(p_event);
+				startCell.get().setOnMouseReleased(localCbckMouseReleased);
+			});
+
+			toRet.setFont(App.FONT_LARGE);
+
+			return toRet;
+		});
 		localListView.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			final boolean inFocus = p_newValue; // JavaFX ain't settin' it `null`!...
 			localLabelClientsList.setStyle(inFocus
@@ -662,21 +677,17 @@ public final class App extends Application {
 		final var localLabelOptionsList = App.labelOptionsList;
 
 		localListView.requestFocus();
+		localListView.getItems().addAll(Option.valuesOrdered());
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
+
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;");
-
-		final Option[] options = Option.values();
-		final String[] optionLabels = new String[options.length];
-
-		for (int i = 0; i < options.length; ++i)
-			optionLabels[i] = options[i].LABEL;
 
 		localListView.setOnKeyPressed(p_event -> {
 			final var clientSelections = App.listViewClients.getSelectionModel();
 			final var optionSelections = App.listViewOptions.getSelectionModel();
 
 			final var selectedItems = clientSelections.getSelectedItems();
-			final var selectedOption = Option.valueOfLabel(optionSelections.getSelectedItem());
+			final var selectedOption = optionSelections.getSelectedItem();
 
 			switch (p_event.getCode()) {
 
@@ -691,24 +702,24 @@ public final class App extends Application {
 		});
 
 		localListView.setCellFactory(p_listView -> {
-			final var toRet = new ListCell<String>() {
+			final var toRet = new ListCell<Option>() {
 
 				@Override
-				protected void updateItem(final String p_label, final boolean p_isEmpty) {
-					super.updateItem(p_label, p_isEmpty);
+				protected void updateItem(final Option p_option, final boolean p_isEmpty) {
+					super.updateItem(p_option, p_isEmpty);
 
 					if (super.isFocused() && localListView.isFocused())
 						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: rgb(255, 255, 255);");
 					else
 						super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: #808080;");
 
-					if (p_label != null /* && !p_isEmpty */) {
+					if (p_option != null /* && !p_isEmpty */) {
 						super.setOnMouseClicked(p_event -> {
 							final var clientSelections = App.listViewClients.getSelectionModel();
 							final var optionSelections = App.listViewOptions.getSelectionModel();
 
 							final var selectedItems = clientSelections.getSelectedItems();
-							final var selectedOption = Option.valueOfLabel(optionSelections.getSelectedItem());
+							final var selectedOption = optionSelections.getSelectedItem();
 
 							//
 							// if (p_event.getPickResult().getIntersectedNode() != this)
@@ -725,17 +736,17 @@ public final class App extends Application {
 							}
 						});
 
-						final String tooltipText = Option.valueOfLabel(p_label).TOOLTIP;
+						final String tooltipText = p_option.TOOLTIP;
 
 						if (!tooltipText.isEmpty()) {
 							final var tooltip = new Tooltip(tooltipText);
-							tooltip.setFont(App.FONT_LARGE);
 							super.setTooltip(tooltip);
+							tooltip.setFont(App.FONT_LARGE);
 							tooltip.setShowDelay(Duration.seconds(0.15));
 						}
 
 						super.setCursor(Cursor.HAND);
-						super.setText(p_label);
+						super.setText(p_option.LABEL);
 					} else { // This CLEARS text when it goes away!
 						super.setCursor(Cursor.DEFAULT);
 						super.setText(null);
@@ -758,8 +769,6 @@ public final class App extends Application {
 
 			);
 		});
-
-		localListView.getItems().addAll(optionLabels);
 	}
 
 	private void initSeparatorButton() {

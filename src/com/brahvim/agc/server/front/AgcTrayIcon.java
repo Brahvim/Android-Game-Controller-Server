@@ -1,6 +1,5 @@
 package com.brahvim.agc.server.front;
 
-import java.awt.AWTException;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.MenuItem;
@@ -17,28 +16,24 @@ import javafx.collections.ListChangeListener.Change;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 
+// TODO: Make this summon a JavaFX window instead! For cross-platform style points!
+
 public class AgcTrayIcon {
 
 	public static final Font FONT_LARGE = new Font("Courier", Font.BOLD, 20);
 
 	static final ObservableList<MenuItem> listMenuItems = FXCollections.observableArrayList();
 
-	private static PopupMenu menuInstance;
+	private static PopupMenu menu;
 
 	private AgcTrayIcon() {
 		throw new IllegalAccessError();
 	}
 
-	public static void load() {
-		AgcTrayIcon.menuInstance = AgcTrayIcon.tryCreating();
-	}
-
-	public static PopupMenu getMenuInstance() {
-		return AgcTrayIcon.menuInstance;
-	}
-
-	public static String getString(final String p_property) {
-		return App.STRINGS.getString("TrayList", p_property);
+	public static PopupMenu getMenu() {
+		if (AgcTrayIcon.menu == null)
+			AgcTrayIcon.menu = AgcTrayIcon.tryCreating();
+		return AgcTrayIcon.menu;
 	}
 
 	public static MenuItem createOptionClose() {
@@ -67,19 +62,12 @@ public class AgcTrayIcon {
 		return toRet;
 	}
 
-	private static PopupMenu tryCreating() {
-		try {
-
-			return AgcTrayIcon.create();
-
-		} catch (final AWTException e) {
-			System.err.println("Couldn't create tray icon.");
-			return null;
-		}
+	public static String getString(final String p_property) {
+		return App.STRINGS.getString("TrayList", p_property);
 	}
 
-	private static PopupMenu create() throws AWTException {
-		final var menu = new PopupMenu();
+	private static PopupMenu create() throws Exception { // NOSONAR. Too many exceptions, sorry!
+		final var toRet = new PopupMenu();
 
 		final MenuItem[] menuItems = {
 
@@ -89,10 +77,10 @@ public class AgcTrayIcon {
 
 		};
 
-		for (final MenuItem i : menuItems) {
+		for (final var i : menuItems) {
 			i.setFont(AgcTrayIcon.FONT_LARGE);
 			AgcTrayIcon.listMenuItems.add(i);
-			menu.add(i);
+			toRet.add(i);
 		}
 
 		AgcTrayIcon.listMenuItems.addAll(menuItems);
@@ -101,7 +89,7 @@ public class AgcTrayIcon {
 			final var max = p_change.getTo();
 
 			for (int i = p_change.getFrom(); i < max; ++i)
-				menu.add(list.get(i));
+				toRet.add(list.get(i));
 		});
 
 		// menu.setFont(AgcTrayIcon.FONT_LARGE);
@@ -124,11 +112,22 @@ public class AgcTrayIcon {
 
 				iconResized,
 				"Android Game Controller",
-				menu
+				toRet
 
 		));
 
-		return menu;
+		return toRet;
+	}
+
+	private static PopupMenu tryCreating() {
+		try {
+
+			return AgcTrayIcon.create();
+
+		} catch (final Exception e) {
+			System.err.println("Couldn't create tray icon.");
+			return null;
+		}
 	}
 
 }

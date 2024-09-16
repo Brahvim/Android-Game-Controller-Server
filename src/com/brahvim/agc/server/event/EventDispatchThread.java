@@ -33,7 +33,7 @@ public final class EventDispatchThread {
 	}
 
 	public final void publish(final Event... p_events) {
-		for (final Event e : p_events)
+		for (final var e : p_events)
 			if (e != null)
 				this.queue.add(e);
 

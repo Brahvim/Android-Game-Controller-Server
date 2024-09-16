@@ -45,13 +45,16 @@ public final class StageLayoutChooser {
 		final var localStage = StageLayoutChooser.stage;
 
 		if (localStage.isShowing()) {
-			localStage.requestFocus();
+			StageLayoutChooser.listViewLayouts.requestFocus();
 		} else {
 			localStage.show();
 		}
 	}
 
 	public static void close() {
+		if (StageLayoutChooser.stage == null)
+			return;
+
 		StageLayoutChooser.stage.close();
 	}
 
@@ -128,10 +131,24 @@ public final class StageLayoutChooser {
 	private static void initRootPane() {
 		final var localPaneRoot = StageLayoutChooser.paneRoot;
 		final var localListView = StageLayoutChooser.listViewLayouts;
-		final Button localButtonAdd = StageLayoutChooser.buttonAddLayout;
-		final Button localButtonDel = StageLayoutChooser.buttonDelLayout;
+		final var localButtonAdd = StageLayoutChooser.buttonAddLayout;
+		final var localButtonDel = StageLayoutChooser.buttonDelLayout;
 
 		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Dis CSS!
+
+		localPaneRoot.setOnKeyPressed(p_event -> {
+			switch (p_event.getCode()) {
+
+				case ESCAPE -> {
+					StageLayoutChooser.close();
+				}
+
+				default -> {
+					// No defaults!
+				}
+
+			}
+		});
 
 		localPaneRoot.widthProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			final double side = p_newValue.doubleValue();

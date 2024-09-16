@@ -40,11 +40,6 @@ public final class Client {
 		this.id = Client.createClient();
 	}
 
-	public Client(final String p_uiEntry) {
-		this();
-		this.setUiEntry(p_uiEntry);
-	}
-
 	public synchronized void destroy() {
 		// synchronized (Client.waitForOtherCreateOrDestroy()) {
 		// `Map`s:
