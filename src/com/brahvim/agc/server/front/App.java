@@ -73,16 +73,16 @@ public final class App extends Application {
 	static final ArrayList<Client> waitingClients = new ArrayList<>();
 
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
-	static Stage stage = null; // NOSONAR!
-	static Scene scene = null; // NOSONAR!
-	static Pane paneRoot = null; // NOSONAR!
-	static HBox paneRow1 = null; // NOSONAR!
-	static HBox paneRow2 = null; // NOSONAR!
-	static Button buttonSeparator = null; // NOSONAR!
-	static Label labelClientsList = null; // NOSONAR!
-	static Label labelOptionsList = null; // NOSONAR!
-	static ListView<Client> listViewClients = null; // NOSONAR!
-	static ListView<Option> listViewOptions = null; // NOSONAR!
+	private static Stage stage = null; // NOSONAR!
+	private static Scene scene = null; // NOSONAR!
+	private static Pane paneRoot = null; // NOSONAR!
+	private static HBox paneRow1 = null; // NOSONAR!
+	private static HBox paneRow2 = null; // NOSONAR!
+	private static Button buttonSeparator = null; // NOSONAR!
+	private static Label labelClientsList = null; // NOSONAR!
+	private static Label labelOptionsList = null; // NOSONAR!
+	private static ListView<Client> listViewClients = null; // NOSONAR!
+	private static ListView<OptionHome> listViewOptions = null; // NOSONAR!
 	// endregion
 
 	// region Static methods.
@@ -168,8 +168,69 @@ public final class App extends Application {
 		});
 	}
 
-	// If I'm not submitting this to an API, `on*()`. Else `cbck*()`.
-	private static void onSelectionMadeInOptionsList(final Option p_option) {
+	public static void showStageFocusedAndCentered() {
+		App.showStageFocusedAndCentered(App.stage);
+	}
+
+	private static void cbckKeyPressedForUndo(final KeyEvent p_event) {
+		final boolean alt = p_event.isAltDown();
+		final boolean meta = p_event.isMetaDown();
+		final boolean shift = p_event.isShiftDown();
+		final boolean ctrl = p_event.isControlDown();
+
+		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
+		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NONE of those keys are active, nothing!
+																		// (`0` px!)
+
+		// FIXME: If typing bugs, check *this out!:*
+
+		switch (p_event.getCode()) {
+
+			case Y -> {
+				if (!onlyCtrl)
+					return;
+
+				System.out.println("`Ctrl` + `Y` seen.");
+			}
+
+			case Z -> {
+				if (!ctrl)
+					return;
+
+				if (onlyCtrl)
+					System.out.println("`Ctrl` + `Z` seen.");
+
+				if (shift)
+					System.out.println("`Ctrl` + `Shift` + `Z` seen.");
+			}
+
+			default -> {
+				//
+			}
+
+		}
+	}
+
+	// region If I'm not submitting this to an API, `on*()`. Else `cbck*()`.
+
+	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
+		final var localListViewClients = App.listViewClients;
+		final var localListViewOptions = App.listViewOptions;
+		final var localLabelClientsList = App.labelClientsList;
+		final var localLabelOptionsList = App.labelOptionsList;
+
+		localListViewClients.setPrefWidth((localListViewClients.getPrefWidth() / p_oldValue) * p_newValue);
+		localListViewOptions.setPrefWidth((localListViewOptions.getPrefWidth() / p_oldValue) * p_newValue);
+		localLabelOptionsList.setPrefWidth((localLabelOptionsList.getPrefWidth() / p_oldValue) * p_newValue);
+		localLabelClientsList.setPrefWidth((localLabelClientsList.getPrefWidth() / p_oldValue) * p_newValue);
+	}
+
+	private static void onListViewsHeighten(final double p_listHeight) {
+		App.listViewClients.setPrefHeight(p_listHeight);
+		App.listViewOptions.setPrefHeight(p_listHeight);
+	}
+
+	private static void onOptionSelection(final OptionHome p_option) {
 		if (p_option == null)
 			return;
 
@@ -230,62 +291,7 @@ public final class App extends Application {
 
 		}
 	}
-
-	private static void cbckKeyPressedForUndo(final KeyEvent p_event) {
-		final boolean alt = p_event.isAltDown();
-		final boolean meta = p_event.isMetaDown();
-		final boolean shift = p_event.isShiftDown();
-		final boolean ctrl = p_event.isControlDown();
-
-		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
-		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NONE of those keys are active, nothing!
-																		// (`0` px!)
-
-		// FIXME: If typing bugs, check *this out!:*
-
-		switch (p_event.getCode()) {
-
-			case Y -> {
-				if (!onlyCtrl)
-					return;
-
-				System.out.println("`Ctrl` + `Y` seen.");
-			}
-
-			case Z -> {
-				if (!ctrl)
-					return;
-
-				if (onlyCtrl)
-					System.out.println("`Ctrl` + `Z` seen.");
-
-				if (shift)
-					System.out.println("`Ctrl` + `Shift` + `Z` seen.");
-			}
-
-			default -> {
-				//
-			}
-
-		}
-	}
-
-	private static void onListViewsHeighten(final double p_listHeight) {
-		App.listViewClients.setPrefHeight(p_listHeight);
-		App.listViewOptions.setPrefHeight(p_listHeight);
-	}
-
-	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
-		final var localListViewClients = App.listViewClients;
-		final var localListViewOptions = App.listViewOptions;
-		final var localLabelClientsList = App.labelClientsList;
-		final var localLabelOptionsList = App.labelOptionsList;
-
-		localListViewClients.setPrefWidth((localListViewClients.getPrefWidth() / p_oldValue) * p_newValue);
-		localListViewOptions.setPrefWidth((localListViewOptions.getPrefWidth() / p_oldValue) * p_newValue);
-		localLabelOptionsList.setPrefWidth((localLabelOptionsList.getPrefWidth() / p_oldValue) * p_newValue);
-		localLabelClientsList.setPrefWidth((localLabelClientsList.getPrefWidth() / p_oldValue) * p_newValue);
-	}
+	// endregion
 	// endregion
 
 	@Override
@@ -544,18 +550,18 @@ public final class App extends Application {
 			// This one performs actual operations:
 			switch (p_event.getCode()) {
 
-				case INSERT -> App.onSelectionMadeInOptionsList(Option.ADD);
+				case INSERT -> App.onOptionSelection(OptionHome.ADD);
 
 				case DELETE -> {
 					if (!onlyShiftCtrl) {
-						App.onSelectionMadeInOptionsList(Option.REMOVE);
+						App.onOptionSelection(OptionHome.REMOVE);
 						return;
 					}
 
-					App.onSelectionMadeInOptionsList(Option.STOP);
+					App.onOptionSelection(OptionHome.STOP);
 				}
 
-				case ENTER -> App.onSelectionMadeInOptionsList(Option.CONTROLS);
+				case ENTER -> App.onOptionSelection(OptionHome.CONTROLS);
 
 				default -> {
 					// No defaults...
@@ -677,7 +683,7 @@ public final class App extends Application {
 		final var localLabelOptionsList = App.labelOptionsList;
 
 		localListView.requestFocus();
-		localListView.getItems().addAll(Option.valuesOrdered());
+		localListView.getItems().addAll(OptionHome.valuesOrdered());
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;");
@@ -692,7 +698,7 @@ public final class App extends Application {
 			switch (p_event.getCode()) {
 
 				case ENTER, SPACE ->
-					App.onSelectionMadeInOptionsList(selectedOption);
+					App.onOptionSelection(selectedOption);
 
 				default -> {
 					return;
@@ -702,10 +708,10 @@ public final class App extends Application {
 		});
 
 		localListView.setCellFactory(p_listView -> {
-			final var toRet = new ListCell<Option>() {
+			final var toRet = new ListCell<OptionHome>() {
 
 				@Override
-				protected void updateItem(final Option p_option, final boolean p_isEmpty) {
+				protected void updateItem(final OptionHome p_option, final boolean p_isEmpty) {
 					super.updateItem(p_option, p_isEmpty);
 
 					if (super.isFocused() && localListView.isFocused())
@@ -727,7 +733,7 @@ public final class App extends Application {
 
 							switch (p_event.getButton()) {
 
-								case PRIMARY -> App.onSelectionMadeInOptionsList(selectedOption);
+								case PRIMARY -> App.onOptionSelection(selectedOption);
 
 								default -> {
 									//

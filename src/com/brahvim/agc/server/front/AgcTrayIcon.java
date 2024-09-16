@@ -1,16 +1,16 @@
 package com.brahvim.agc.server.front;
 
 import java.awt.Font;
-import java.awt.Graphics2D;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
-import java.awt.RenderingHints;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
-import java.awt.image.BufferedImage;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
 import com.brahvim.agc.server.ExitCode;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener.Change;
 import javafx.collections.ObservableList;
@@ -49,7 +49,7 @@ public class AgcTrayIcon {
 	public static MenuItem createOptionShowHome() {
 		final var toRet = new MenuItem(AgcTrayIcon.getString("showHome"));
 
-		toRet.addActionListener(p_action -> App.showStageFocusedAndCentered(App.stage));
+		toRet.addActionListener(p_action -> App.showStageFocusedAndCentered());
 
 		return toRet;
 	}
@@ -57,7 +57,7 @@ public class AgcTrayIcon {
 	public static MenuItem createOptionShowLayoutChooser() {
 		final var toRet = new MenuItem(AgcTrayIcon.getString("showLayout"));
 
-		toRet.addActionListener(p_action -> App.showStageFocusedAndCentered(App.stage));
+		toRet.addActionListener(p_action -> App.showStageFocusedAndCentered());
 
 		return toRet;
 	}
@@ -94,27 +94,41 @@ public class AgcTrayIcon {
 
 		// menu.setFont(AgcTrayIcon.FONT_LARGE);
 
-		final BufferedImage iconOriginal = SwingFXUtils.fromFXImage(App.AGC_ICON_IMAGE, null);
-		final BufferedImage iconResized = new BufferedImage(
+		final TrayIcon trayIcon = new TrayIcon(
 
-				iconOriginal.getWidth(),
-				iconOriginal.getHeight(),
-				iconOriginal.getType()
+				SwingFXUtils.fromFXImage(App.AGC_ICON_IMAGE, null),
+				"Android Game Controller"
 
 		);
 
-		final Graphics2D buffer = iconResized.createGraphics();
-		buffer.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-		buffer.drawImage(iconOriginal, 0, 0, 24, 24, null);
-		buffer.dispose();
+		trayIcon.setImageAutoSize(true);
 
-		SystemTray.getSystemTray().add(new TrayIcon(
+		trayIcon.addMouseListener(new MouseListener() {
 
-				iconResized,
-				"Android Game Controller",
-				toRet
+			@Override
+			public void mouseClicked(final MouseEvent p_event) {
+				Platform.runLater(() -> DialogTrayMenu.show(p_event));
+			}
 
-		));
+			@Override
+			public void mousePressed(final MouseEvent p_event) {
+			}
+
+			@Override
+			public void mouseReleased(final MouseEvent p_event) {
+			}
+
+			@Override
+			public void mouseEntered(final MouseEvent p_event) {
+			}
+
+			@Override
+			public void mouseExited(final MouseEvent p_event) {
+			}
+
+		});
+
+		SystemTray.getSystemTray().add(trayIcon);
 
 		return toRet;
 	}

@@ -16,17 +16,23 @@ public final class StageLayoutChooser {
 	// region Fields.
 	public static final String STRING_TABLE_SECTION = "LayoutChooser";
 
-	static Stage stage;
-	static Scene scene;
-	static Pane paneRoot;
-	static Pane paneButtons;
-	static Button buttonSeparator;
-	static Button buttonAddLayout;
-	static Button buttonDelLayout;
-	static Label labelLayoutChooser;
-	static Label labelLayoutOptions;
-	static ListView<String> listViewLayouts;
-	static ListView<String> listViewOptions;
+	private static Stage stage;
+	private static Scene scene;
+	private static Pane paneRoot;
+	private static Pane paneButtons;
+
+	@SuppressWarnings("unused")
+	private static Button buttonSeparator;
+	private static Button buttonAddLayout;
+	private static Button buttonDelLayout;
+	private static Label labelLayoutChooser;
+
+	@SuppressWarnings("unused")
+	private static Label labelLayoutOptions;
+	private static ListView<String> listViewLayouts;
+
+	@SuppressWarnings("unused")
+	private static ListView<String> listViewOptions;
 	// endregion
 
 	// Will do this for two types of data:
@@ -49,6 +55,10 @@ public final class StageLayoutChooser {
 		} else {
 			localStage.show();
 		}
+	}
+
+	public static void showStageFocusedAndCentered() {
+		App.showStageFocusedAndCentered(StageLayoutChooser.stage);
 	}
 
 	public static void close() {
