@@ -39,7 +39,7 @@ public class AgcTrayIcon {
 	private static TrayIcon create() throws Exception { // NOSONAR. Too many exceptions, sorry!
 		final var toRet = new TrayIcon(
 
-				SwingFXUtils.fromFXImage(StageHome.AGC_ICON_IMAGE, null),
+				SwingFXUtils.fromFXImage(App.AGC_ICON_IMAGE, null),
 				"Android Game Controller"
 
 		);
@@ -55,7 +55,7 @@ public class AgcTrayIcon {
 						// No defaults!
 					}
 					case MouseEvent.BUTTON2 -> {
-						StageHome.exit(ExitCode.OKAY);
+						App.exit(ExitCode.OKAY);
 					}
 					case MouseEvent.BUTTON3, MouseEvent.BUTTON1 -> {
 						Platform.runLater(() -> DialogTrayMenu.show(p_event));

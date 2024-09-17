@@ -6,7 +6,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 
-import com.brahvim.agc.server.front.StageHome;
+import com.brahvim.agc.server.front.App;
 
 // No, I'm not making this `AutoCloseable`! -v-
 public final class Client {
@@ -124,8 +124,8 @@ public final class Client {
 			id = ++Client.count;
 
 		// Client.idToSoaIndexMap.put(myId, soaIndex);
-		StageHome.ensureArrayListSize(Client.listSocksUdp, id);
-		StageHome.ensureArrayListSize(Client.listThreadsUdp, id);
+		App.ensureArrayListSize(Client.listSocksUdp, id);
+		App.ensureArrayListSize(Client.listThreadsUdp, id);
 
 		return id;
 	}

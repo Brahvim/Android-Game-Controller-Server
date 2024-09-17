@@ -66,14 +66,14 @@ public final class StageLayoutChooser {
 	}
 
 	public static String getFromStringTable(final String p_property) {
-		return StageHome.STRINGS.getString(StageLayoutChooser.STRING_TABLE_SECTION, p_property);
+		return App.STRINGS.getString(StageLayoutChooser.STRING_TABLE_SECTION, p_property);
 	}
 
 	public static void showStageFocusedAndCentered() {
 		Platform.runLater(() -> {
 			StageLayoutChooser.show();
 			StageLayoutChooser.stage.requestFocus();
-			StageHome.centerStage(StageLayoutChooser.stage);
+			App.centerStage(StageLayoutChooser.stage);
 		});
 	}
 
@@ -135,12 +135,12 @@ public final class StageLayoutChooser {
 		localStage.setMinWidth(120);
 		localStage.setMinHeight(248);
 
-		localStage.setMaxWidth(StageHome.PRIMARY_SCREEN_WIDTH);
-		localStage.setMaxHeight(StageHome.PRIMARY_SCREEN_HEIGHT);
+		localStage.setMaxWidth(App.PRIMARY_SCREEN_WIDTH);
+		localStage.setMaxHeight(App.PRIMARY_SCREEN_HEIGHT);
 
 		localStage.setScene(StageLayoutChooser.scene);
-		localStage.getIcons().add(StageHome.AGC_ICON_IMAGE);
-		localStage.setTitle(StageHome.STRINGS.getString("StageTitles", "showLayout"));
+		localStage.getIcons().add(App.AGC_ICON_IMAGE);
+		localStage.setTitle(App.STRINGS.getString("StageTitles", "showLayout"));
 	}
 
 	private static void initRootPane() {
@@ -185,8 +185,8 @@ public final class StageLayoutChooser {
 		final var localLabel = StageLayoutChooser.labelLayoutChooser;
 
 		localLabel.setAlignment(Pos.CENTER);
-		localLabel.setFont(StageHome.FONT_LARGE);
-		localLabel.setPrefWidth(StageHome.PRIMARY_SCREEN_WIDTH);
+		localLabel.setFont(App.FONT_LARGE);
+		localLabel.setPrefWidth(App.PRIMARY_SCREEN_WIDTH);
 		localLabel.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: rgb(255, 255, 255)");
 	}
 
@@ -194,7 +194,7 @@ public final class StageLayoutChooser {
 		final var localButton = StageLayoutChooser.buttonAddLayout;
 
 		localButton.setCursor(Cursor.HAND);
-		localButton.setFont(StageHome.FONT_LARGE);
+		localButton.setFont(App.FONT_LARGE);
 		localButton.setLayoutY(StageLayoutChooser.paneButtons.getTranslateY());
 		localButton.setStyle("-fx-background-color: #808080; -fx-text-fill: darkblue");
 	}
@@ -203,7 +203,7 @@ public final class StageLayoutChooser {
 		final var localButton = StageLayoutChooser.buttonDelLayout;
 
 		localButton.setCursor(Cursor.HAND);
-		localButton.setFont(StageHome.FONT_LARGE);
+		localButton.setFont(App.FONT_LARGE);
 		localButton.setLayoutY(StageLayoutChooser.paneButtons.getTranslateY());
 		localButton.setStyle("-fx-background-color: #808080; -fx-text-fill: darkred");
 	}

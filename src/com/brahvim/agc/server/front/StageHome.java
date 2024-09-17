@@ -1,27 +1,16 @@
 package com.brahvim.agc.server.front;
 
-import java.awt.EventQueue;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
-import com.brahvim.agc.server.ExitCode;
-import com.brahvim.agc.server.StringTable;
 import com.brahvim.agc.server.back.Backend;
 import com.brahvim.agc.server.back.Client;
 import com.brahvim.agc.server.back.EventAwaitOneClient;
 
-import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.property.ObjectProperty;
-import javafx.event.Event;
 import javafx.event.EventHandler;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -30,48 +19,19 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Tooltip;
-import javafx.scene.image.Image;
-import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
 @SuppressWarnings("unused")
-public final class StageHome extends Application {
+public final class StageHome {
 
 	// region Fields.
-	public static final Font FONT_LARGE = new Font(18);
-	public static final Screen PRIMARY_SCREEN = Screen.getPrimary();
-	public static final Object JAVAFX_APP_THREAD_LOCK = new Object();
-	public static final Image AGC_ICON_IMAGE = ((Supplier<Image>) () -> {
-
-		try (final FileInputStream fis = new FileInputStream("./res/images/icon-192.png")) {
-			return new Image(fis);
-		} catch (final IOException e) {
-			System.err.println("ICON IMAGE NOT FOUND.");
-
-			final WritableImage toRet = new WritableImage(1, 1);
-			toRet.getPixelWriter().setArgb(0, 0, 0x00000000); // Transparent now.
-
-			return toRet;
-		}
-
-	}).get();
-	public static final Rectangle2D PRIMARY_SCREEN_RECT = StageHome.PRIMARY_SCREEN.getBounds();
-	public static final double PRIMARY_SCREEN_WIDTH = StageHome.PRIMARY_SCREEN_RECT.getWidth();
-	public static final double PRIMARY_SCREEN_HEIGHT = StageHome.PRIMARY_SCREEN_RECT.getHeight();
-	public static final StringTable STRINGS = StringTable.tryCreating("./res/strings/AgcStringTable.ini");
-
-	static final ArrayList<KeyCode> pressedKeys = new ArrayList<>();
-	static final ArrayList<Client> waitingClients = new ArrayList<>();
-
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
 	private static Stage stage = null; // NOSONAR!
 	private static Scene scene = null; // NOSONAR!
@@ -81,87 +41,21 @@ public final class StageHome extends Application {
 	private static Button buttonSeparator = null; // NOSONAR!
 	private static Label labelClientsList = null; // NOSONAR!
 	private static Label labelOptionsList = null; // NOSONAR!
+	// private static ArrayList<KeyCode> pressedKeys = new ArrayList<>();
 	private static ListView<Client> listViewClients = null; // NOSONAR!
 	private static ListView<OptionsHome> listViewOptions = null; // NOSONAR!
 	// endregion
 
+	private StageHome() {
+		throw new IllegalAccessError();
+	}
+
 	// region Static methods.
-	public static void main(final String... p_args) {
-		Platform.setImplicitExit(false);
-		new Thread(Application::launch, "AGC:FX_APP_LAUNCHER").start();
-		EventQueue.invokeLater(AgcTrayIcon::getTrayIcon); // `SwingUtilities.invokeLater()` throws up :/
-	}
-
-	public static void exit(final ExitCode p_exitCode) {
-		System.out.print(ExitCode.ERROR_MESSAGE_PREFIX);
-		System.out.println(p_exitCode.errorMessage);
-		System.exit(p_exitCode.ordinal());
-	}
-
-	public static void centerStage(final Stage p_stage) {
-		p_stage.setX((StageHome.PRIMARY_SCREEN_WIDTH / 2) - (p_stage.getWidth() / 2));
-		p_stage.setY((StageHome.PRIMARY_SCREEN_HEIGHT / 2) - (p_stage.getHeight() / 2));
-	}
-
-	public static <EventT extends Event> void appendEventHandler(
-
-			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
-			final EventHandler<? super EventT> p_toAppend
-
-	) {
-		if (p_toAppend == null)
-			return;
-
-		final EventHandler<? super EventT> registered = p_handlerProperty.get();
-
-		if (registered == null) {
-			p_handlerProperty.set(p_toAppend);
-			return;
-		}
-
-		p_handlerProperty.set(p_event -> {
-			registered.handle(p_event);
-			p_toAppend.handle(p_event);
-		});
-	}
-
-	public static <EventT extends Event> void prependEventHandler(
-
-			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
-			final EventHandler<? super EventT> p_toPrepend
-
-	) {
-		if (p_toPrepend == null)
-			return;
-
-		final EventHandler<? super EventT> registered = p_handlerProperty.get();
-
-		if (registered == null) {
-			p_handlerProperty.set(p_toPrepend);
-			return;
-		}
-
-		p_handlerProperty.set(p_event -> {
-			p_toPrepend.handle(p_event);
-			registered.handle(p_event);
-		});
-	}
-
-	public static void ensureArrayListSize(final ArrayList<?> p_list, final Integer p_minSize) {
-		// `Collection::addAll()`? Well, no!
-		// Putting my own `Collection` subclass didn't exactly work out, and `List.of()`
-		// won't create a `List` with `null`s! (See its use of `ImmutableCollections`!)
-		p_list.ensureCapacity(p_minSize);
-
-		while (p_list.size() <= p_minSize)
-			p_list.add(null);
-	}
-
 	public static void showStageFocusedAndCentered() {
 		Platform.runLater(() -> {
 			StageHome.stage.show();
 			StageHome.stage.requestFocus();
-			StageHome.centerStage(StageHome.stage);
+			App.centerStage(StageHome.stage);
 		});
 	}
 
@@ -236,32 +130,32 @@ public final class StageHome extends Application {
 				Backend.EDT.publish(EventAwaitOneClient.create());
 				final Client client = new Client();
 
-				client.setUiEntry(StageHome.STRINGS.getFormatted(
+				client.setUiEntry(App.STRINGS.getFormatted(
 
 						"ListClients", "waiting", Backend.INT_CLIENTS_LEFT.incrementAndGet(), 0
 
 				));
 
 				System.out.printf("Added client [%s].%n", client.getUiEntry());
-				StageHome.waitingClients.add(client);
+				App.LIST_CLIENTS_WAITING.add(client);
 				items.add(client);
 			}
 
 			case STOP -> {
 				Backend.INT_CLIENTS_LEFT.set(0);
 
-				for (final var c : StageHome.waitingClients) {
+				for (final var c : App.LIST_CLIENTS_WAITING) {
 					items.remove(c);
 					c.destroy();
 				}
 
-				StageHome.waitingClients.clear();
+				App.LIST_CLIENTS_WAITING.clear();
 
 				System.out.println("Now awaiting no clients.");
 			}
 
 			case REMOVE -> {
-				StageHome.waitingClients.removeIf(selections::contains);
+				App.LIST_CLIENTS_WAITING.removeIf(selections::contains);
 
 				for (final var c : selections)
 					c.destroy();
@@ -287,34 +181,16 @@ public final class StageHome extends Application {
 	// endregion
 	// endregion
 
-	@Override
-	public void stop() throws Exception {
-		try {
-
-			final Object lock = StageHome.JAVAFX_APP_THREAD_LOCK;
-
-			while (true) {
-				synchronized (lock) {
-					lock.wait();
-				}
-			}
-
-		} catch (final InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-
-		Backend.shutdown();
-		System.exit(1); // COULD BE a JavaFX crash!
+	public static void show() {
 	}
 
-	@Override
-	public void start(final Stage p_stage) {
+	public static void show(final Stage p_initStage) {
 		final var localLabelClientsList = StageHome.labelClientsList = new Label("Phones:");
 		final var localLabelOptionsList = StageHome.labelOptionsList = new Label("Options:");
 		final var localListViewClients = StageHome.listViewClients = new ListView<>();
 		final var localListViewOptions = StageHome.listViewOptions = new ListView<>();
 		final var localButtonSeparator = StageHome.buttonSeparator = new Button();
-		final var localStage = StageHome.stage = p_stage;
+		final var localStage = StageHome.stage = p_initStage;
 		final var localRow2 = StageHome.paneRow2 = new HBox(
 
 				localListViewClients,
@@ -327,11 +203,11 @@ public final class StageHome extends Application {
 		final var localPaneRoot = StageHome.paneRoot = new VBox(localRow1, localRow2);
 		final var localScene = StageHome.scene = new Scene(localPaneRoot);
 
-		this.initStage();
-		this.initRootPane();
-		this.initClientsList();
-		this.initOptionsList();
-		this.initSeparatorButton();
+		StageHome.initStage();
+		StageHome.initRootPane();
+		StageHome.initClientsList();
+		StageHome.initOptionsList();
+		StageHome.initSeparatorButton();
 
 		{
 			double stageWidthRatio;
@@ -352,14 +228,14 @@ public final class StageHome extends Application {
 
 		// StageLayoutChooser.show();
 
-		localStage.setX((StageHome.PRIMARY_SCREEN_WIDTH / 2) - (localStage.getWidth() / 2));
-		localStage.setY((StageHome.PRIMARY_SCREEN_HEIGHT / 2) - (localStage.getHeight() / 2));
+		localStage.setX((App.PRIMARY_SCREEN_WIDTH / 2) - (localStage.getWidth() / 2));
+		localStage.setY((App.PRIMARY_SCREEN_HEIGHT / 2) - (localStage.getHeight() / 2));
 	}
 
-	private void initStage() {
+	private static void initStage() {
 		final Stage localStage = StageHome.stage;
-		final double width = StageHome.PRIMARY_SCREEN_WIDTH / 4;
-		final double height = StageHome.PRIMARY_SCREEN_HEIGHT / 4;
+		final double width = App.PRIMARY_SCREEN_WIDTH / 4;
+		final double height = App.PRIMARY_SCREEN_HEIGHT / 4;
 
 		localStage.setOnCloseRequest(p_event -> {
 			// localStage.hide();
@@ -367,8 +243,8 @@ public final class StageHome extends Application {
 
 		localStage.setResizable(true);
 		// stage.initStyle(StageStyle.TRANSPARENT);
-		localStage.getIcons().add(StageHome.AGC_ICON_IMAGE);
-		localStage.setTitle(StageHome.STRINGS.getString("StageTitles", "showHome"));
+		localStage.getIcons().add(App.AGC_ICON_IMAGE);
+		localStage.setTitle(App.STRINGS.getString("StageTitles", "showHome"));
 
 		localStage.setWidth(width);
 		localStage.setHeight(height);
@@ -376,8 +252,8 @@ public final class StageHome extends Application {
 		localStage.setMinWidth(120);
 		localStage.setMinHeight(120);
 
-		localStage.setMaxWidth(StageHome.PRIMARY_SCREEN_WIDTH);
-		localStage.setMaxHeight(StageHome.PRIMARY_SCREEN_HEIGHT);
+		localStage.setMaxWidth(App.PRIMARY_SCREEN_WIDTH);
+		localStage.setMaxHeight(App.PRIMARY_SCREEN_HEIGHT);
 
 		final var localListViewClients = StageHome.listViewClients;
 		final var localListViewOptions = StageHome.listViewOptions;
@@ -395,7 +271,7 @@ public final class StageHome extends Application {
 		});
 	}
 
-	private void initRootPane() {
+	private static void initRootPane() {
 		final var localPaneRoot = StageHome.paneRoot;
 		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Repeated 9 times, but it's CSS!
 
@@ -403,13 +279,14 @@ public final class StageHome extends Application {
 		// final var cbckKeyPress = c.getOnKeyPressed();
 		// });
 
-		localPaneRoot.setOnKeyReleased(p_event -> StageHome.pressedKeys.remove(p_event.getCode()));
+		// localPaneRoot.setOnKeyReleased(p_event ->
+		// StageHome.pressedKeys.remove(p_event.getCode()));
 
-		StageHome.prependEventHandler(localPaneRoot.onKeyPressedProperty(), p_event -> {
+		App.prependEventHandler(localPaneRoot.onKeyPressedProperty(), p_event -> {
 			final KeyCode key = p_event.getCode();
 
-			if (!StageHome.pressedKeys.contains(key))
-				StageHome.pressedKeys.add(key);
+			// if (!StageHome.pressedKeys.contains(key))
+			// StageHome.pressedKeys.add(key);
 
 			final boolean alt = p_event.isAltDown();
 			final boolean meta = p_event.isMetaDown();
@@ -488,12 +365,12 @@ public final class StageHome extends Application {
 		});
 	}
 
-	private void initTrayIcon() {
+	private static void initTrayIcon() {
 
 	}
 
 	@SuppressWarnings("unchecked")
-	private void initClientsList() {
+	private static void initClientsList() {
 		final var localListView = StageHome.listViewClients;
 		final var localLabelClientsList = StageHome.labelClientsList;
 
@@ -664,7 +541,7 @@ public final class StageHome extends Application {
 				startCell.get().setOnMouseReleased(localCbckMouseReleased);
 			});
 
-			toRet.setFont(StageHome.FONT_LARGE);
+			toRet.setFont(App.FONT_LARGE);
 
 			return toRet;
 		});
@@ -679,7 +556,7 @@ public final class StageHome extends Application {
 		});
 	}
 
-	private void initOptionsList() {
+	private static void initOptionsList() {
 		final var localListView = StageHome.listViewOptions;
 		final var localLabelOptionsList = StageHome.labelOptionsList;
 
@@ -748,7 +625,7 @@ public final class StageHome extends Application {
 						if (!tooltipText.isEmpty()) {
 							final var tooltip = new Tooltip(tooltipText);
 							super.setTooltip(tooltip);
-							tooltip.setFont(StageHome.FONT_LARGE);
+							tooltip.setFont(App.FONT_LARGE);
 							tooltip.setShowDelay(Duration.seconds(0.15));
 						}
 
@@ -762,7 +639,7 @@ public final class StageHome extends Application {
 
 			};
 
-			toRet.setFont(StageHome.FONT_LARGE);
+			toRet.setFont(App.FONT_LARGE);
 
 			return toRet;
 		});
@@ -778,14 +655,14 @@ public final class StageHome extends Application {
 		});
 	}
 
-	private void initSeparatorButton() {
+	private static void initSeparatorButton() {
 		final var localLabelClients = StageHome.labelClientsList;
 		final var localListViewClients = StageHome.listViewClients;
 		final var localButtonSeparator = StageHome.buttonSeparator;
 
 		localButtonSeparator.setFocusTraversable(false);
 		localButtonSeparator.setCursor(Cursor.OPEN_HAND);
-		localButtonSeparator.setPrefHeight(StageHome.PRIMARY_SCREEN_HEIGHT);
+		localButtonSeparator.setPrefHeight(App.PRIMARY_SCREEN_HEIGHT);
 		localButtonSeparator.setStyle("-fx-background-color: rgb(50, 50, 50);");
 
 		final var lastClickTime = new AtomicLong();

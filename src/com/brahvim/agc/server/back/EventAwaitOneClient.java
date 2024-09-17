@@ -9,7 +9,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.event.Event;
 import com.brahvim.agc.server.event.EventType;
-import com.brahvim.agc.server.front.StageHome;
+import com.brahvim.agc.server.front.App;
 
 public final class EventAwaitOneClient {
 
@@ -46,7 +46,7 @@ public final class EventAwaitOneClient {
 					// App.exit(ExitCode.WELCOME_SOCKET_TIMEOUT);
 				}
 			} catch (final SecurityException e) {
-				StageHome.exit(ExitCode.SSL_SOCKET_ACCEPT_PERMISSION);
+				App.exit(ExitCode.SSL_SOCKET_ACCEPT_PERMISSION);
 			}
 
 		Backend.threadForWelcomeSocket = null;
@@ -76,9 +76,9 @@ public final class EventAwaitOneClient {
 			socket.setSoTimeout(5);
 			return socket;
 		} catch (final IOException e) {
-			StageHome.exit(ExitCode.WELCOME_SOCKET_PORT_UNAVAILABLE);
+			App.exit(ExitCode.WELCOME_SOCKET_PORT_UNAVAILABLE);
 		} catch (final SecurityException e) {
-			StageHome.exit(ExitCode.SSL_SOCKET_CREATION_PERMISSION);
+			App.exit(ExitCode.SSL_SOCKET_CREATION_PERMISSION);
 		}
 
 		return null;
