@@ -61,8 +61,8 @@ final class WaitingDialogBuilder {
 
 	private static void sendDialogToCenter(final Dialog<?> p_dialog) {
 		// I was using the `Stage` instance instead. Oops!:
-		p_dialog.setX((App.PRIMARY_SCREEN_RECT.getWidth() - p_dialog.getWidth()) / 2);
-		p_dialog.setY((App.PRIMARY_SCREEN_RECT.getHeight() - p_dialog.getHeight()) / 2);
+		p_dialog.setX((StageHome.PRIMARY_SCREEN_RECT.getWidth() - p_dialog.getWidth()) / 2);
+		p_dialog.setY((StageHome.PRIMARY_SCREEN_RECT.getHeight() - p_dialog.getHeight()) / 2);
 	}
 
 	private static void addButtonsToPane(final DialogPane p_pane) {
@@ -75,7 +75,7 @@ final class WaitingDialogBuilder {
 		);
 
 		final Button btnCancel = (Button) p_pane.lookupButton(btnTypeCancel);
-		btnCancel.setOnAction(p_event -> App.exit(ExitCode.OKAY));
+		btnCancel.setOnAction(p_event -> StageHome.exit(ExitCode.OKAY));
 	}
 
 	// private static Button getButtonFromDialogPane(final DialogPane p_pane, final

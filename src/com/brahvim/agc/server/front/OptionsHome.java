@@ -35,8 +35,8 @@ public enum OptionsHome {
 
 	private OptionsHome() {
 		final String myName = this.name();
-		this.TOOLTIP = App.STRINGS.getString("TooltipsListOptions", myName);
-		this.LABEL = App.STRINGS.getString("ListOptions", myName);
+		this.TOOLTIP = StageHome.STRINGS.getString("TooltipsListOptions", myName);
+		this.LABEL = StageHome.STRINGS.getString("ListOptions", myName);
 	}
 
 	public static OptionsHome[] valuesOrdered() {

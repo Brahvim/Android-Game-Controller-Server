@@ -68,9 +68,9 @@ public class DialogTrayMenu {
 				// No defaults!
 			}
 
-			case CLOSE -> App.exit(ExitCode.OKAY);
+			case CLOSE -> StageHome.exit(ExitCode.OKAY);
 
-			case HOME -> App.showStageFocusedAndCentered();
+			case HOME -> StageHome.showStageFocusedAndCentered();
 
 			case LAYOUT -> StageLayoutChooser.showStageFocusedAndCentered();
 
@@ -90,12 +90,12 @@ public class DialogTrayMenu {
 
 		localDialog.initStyle(StageStyle.TRANSPARENT);
 		localDialog.initModality(Modality.APPLICATION_MODAL);
-		localDialog.setTitle(App.STRINGS.getString("StageTitles", "tray"));
+		localDialog.setTitle(StageHome.STRINGS.getString("StageTitles", "tray"));
 
 		stage.setWidth(400);
 		stage.setHeight(150);
 		stage.requestFocus();
-		stage.getIcons().add(App.AGC_ICON_IMAGE);
+		stage.getIcons().add(StageHome.AGC_ICON_IMAGE);
 		stage.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			if (p_newValue.booleanValue())
 				return;
@@ -139,7 +139,7 @@ public class DialogTrayMenu {
 					super.updateItem(p_item, p_isEmpty);
 
 					super.setStyle("-fx-background-color: rgb(0, 0, 0); -fx-text-fill: #808080;");
-					super.setFont(App.FONT_LARGE);
+					super.setFont(StageHome.FONT_LARGE);
 
 					if (p_item != null /* && !p_isEmpty */) {
 						super.setOnMouseClicked(p_event -> {
@@ -167,7 +167,7 @@ public class DialogTrayMenu {
 						if (!tooltipText.isEmpty()) {
 							final var tooltip = new Tooltip(tooltipText);
 							tooltip.setShowDelay(Duration.seconds(0.15));
-							tooltip.setFont(App.FONT_LARGE);
+							tooltip.setFont(StageHome.FONT_LARGE);
 							super.setTooltip(tooltip);
 						}
 

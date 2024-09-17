@@ -34,8 +34,8 @@ public enum OptionsTray {
 
 	private OptionsTray() {
 		final String myName = this.name();
-		this.LABEL = App.STRINGS.getString("ListTray", myName);
-		this.TOOLTIP = App.STRINGS.getString("TooltipsListTray", myName);
+		this.LABEL = StageHome.STRINGS.getString("ListTray", myName);
+		this.TOOLTIP = StageHome.STRINGS.getString("TooltipsListTray", myName);
 	}
 
 	public static OptionsTray[] valuesOrdered() {
