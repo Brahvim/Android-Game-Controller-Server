@@ -1,5 +1,6 @@
 package com.brahvim.agc.server.front;
 
+import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
@@ -44,7 +45,7 @@ public final class StageLayoutChooser {
 		throw new IllegalAccessError();
 	}
 
-	public static void show() {
+	public static synchronized void show() {
 		if (StageLayoutChooser.stage == null)
 			StageLayoutChooser.init();
 
@@ -57,19 +58,23 @@ public final class StageLayoutChooser {
 		}
 	}
 
-	public static void showStageFocusedAndCentered() {
-		App.showStageFocusedAndCentered(StageLayoutChooser.stage);
-	}
-
-	public static void close() {
+	public static synchronized void close() {
 		if (StageLayoutChooser.stage == null)
 			return;
 
-		StageLayoutChooser.stage.close();
+		StageLayoutChooser.stage.hide();
 	}
 
 	public static String getFromStringTable(final String p_property) {
 		return App.STRINGS.getString(StageLayoutChooser.STRING_TABLE_SECTION, p_property);
+	}
+
+	public static void showStageFocusedAndCentered() {
+		Platform.runLater(() -> {
+			StageLayoutChooser.show();
+			StageLayoutChooser.stage.requestFocus();
+			App.centerStage(StageLayoutChooser.stage);
+		});
 	}
 
 	@SuppressWarnings("unused")
@@ -135,7 +140,7 @@ public final class StageLayoutChooser {
 
 		localStage.setScene(StageLayoutChooser.scene);
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
-		localStage.setTitle(App.STRINGS.getString("StageTitles", "layout"));
+		localStage.setTitle(App.STRINGS.getString("StageTitles", "showLayout"));
 	}
 
 	private static void initRootPane() {

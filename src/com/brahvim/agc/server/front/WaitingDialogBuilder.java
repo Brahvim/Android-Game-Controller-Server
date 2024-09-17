@@ -27,7 +27,7 @@ final class WaitingDialogBuilder {
 
 		dialog.setHeaderText("Waiting for client phones to connect...");
 		dialog.setTitle("AndroidGameController - Awaiting Clients...");
-		dialog.setOnCloseRequest(p_event -> dialog.close());
+		dialog.setOnCloseRequest(p_event -> dialog.hide());
 		dialog.setResizable(false);
 		dialog.setHeight(144);
 		dialog.setWidth(720);

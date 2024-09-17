@@ -49,11 +49,7 @@ public final class App extends Application {
 	// region Fields.
 	public static final Font FONT_LARGE = new Font(18);
 	public static final Screen PRIMARY_SCREEN = Screen.getPrimary();
-	public static final Rectangle2D PRIMARY_SCREEN_RECT = App.PRIMARY_SCREEN.getBounds();
-	public static final double PRIMARY_SCREEN_WIDTH = App.PRIMARY_SCREEN_RECT.getWidth();
-	public static final double PRIMARY_SCREEN_HEIGHT = App.PRIMARY_SCREEN_RECT.getHeight();
-	public static final StringTable STRINGS = StringTable.tryCreating("./res/strings/AgcStringTable.ini");
-
+	public static final Object JAVAFX_APP_THREAD_LOCK = new Object();
 	public static final Image AGC_ICON_IMAGE = ((Supplier<Image>) () -> {
 
 		try (final FileInputStream fis = new FileInputStream("./res/images/icon-192.png")) {
@@ -68,6 +64,10 @@ public final class App extends Application {
 		}
 
 	}).get();
+	public static final Rectangle2D PRIMARY_SCREEN_RECT = App.PRIMARY_SCREEN.getBounds();
+	public static final double PRIMARY_SCREEN_WIDTH = App.PRIMARY_SCREEN_RECT.getWidth();
+	public static final double PRIMARY_SCREEN_HEIGHT = App.PRIMARY_SCREEN_RECT.getHeight();
+	public static final StringTable STRINGS = StringTable.tryCreating("./res/strings/AgcStringTable.ini");
 
 	static final ArrayList<KeyCode> pressedKeys = new ArrayList<>();
 	static final ArrayList<Client> waitingClients = new ArrayList<>();
@@ -82,17 +82,14 @@ public final class App extends Application {
 	private static Label labelClientsList = null; // NOSONAR!
 	private static Label labelOptionsList = null; // NOSONAR!
 	private static ListView<Client> listViewClients = null; // NOSONAR!
-	private static ListView<OptionHome> listViewOptions = null; // NOSONAR!
+	private static ListView<OptionsHome> listViewOptions = null; // NOSONAR!
 	// endregion
 
 	// region Static methods.
 	public static void main(final String... p_args) {
-		// PS Remember to *somehow get these arguments to the JVM* for JavaFX:
-		// `--module-path ./lib/openjfx --add-modules javafx.controls,javafx.fxml`
-		// (I don't really need the `javafx.fxml` module for this app, but anyway.)
-
+		Platform.setImplicitExit(false);
 		new Thread(Application::launch, "AGC:FX_APP_LAUNCHER").start();
-		EventQueue.invokeLater(AgcTrayIcon::getMenu); // `SwingUtilities.invokeLater()` throws up :/
+		EventQueue.invokeLater(AgcTrayIcon::getTrayIcon); // `SwingUtilities.invokeLater()` throws up :/
 	}
 
 	public static void exit(final ExitCode p_exitCode) {
@@ -160,16 +157,12 @@ public final class App extends Application {
 			p_list.add(null);
 	}
 
-	public static void showStageFocusedAndCentered(final Stage p_stage) {
-		Platform.runLater(() -> {
-			p_stage.show();
-			p_stage.requestFocus();
-			App.centerStage(p_stage);
-		});
-	}
-
 	public static void showStageFocusedAndCentered() {
-		App.showStageFocusedAndCentered(App.stage);
+		Platform.runLater(() -> {
+			App.stage.show();
+			App.stage.requestFocus();
+			App.centerStage(App.stage);
+		});
 	}
 
 	private static void cbckKeyPressedForUndo(final KeyEvent p_event) {
@@ -185,6 +178,10 @@ public final class App extends Application {
 		// FIXME: If typing bugs, check *this out!:*
 
 		switch (p_event.getCode()) {
+
+			default -> {
+				// No defaults!
+			}
 
 			case Y -> {
 				if (!onlyCtrl)
@@ -202,10 +199,6 @@ public final class App extends Application {
 
 				if (shift)
 					System.out.println("`Ctrl` + `Shift` + `Z` seen.");
-			}
-
-			default -> {
-				//
 			}
 
 		}
@@ -230,7 +223,7 @@ public final class App extends Application {
 		App.listViewOptions.setPrefHeight(p_listHeight);
 	}
 
-	private static void onOptionSelection(final OptionHome p_option) {
+	private static void onOptionSelection(final OptionsHome p_option) {
 		if (p_option == null)
 			return;
 
@@ -245,7 +238,7 @@ public final class App extends Application {
 
 				client.setUiEntry(App.STRINGS.getFormatted(
 
-						"ClientsList", "waiting", Backend.INT_CLIENTS_LEFT.incrementAndGet(), 0
+						"ListClients", "waiting", Backend.INT_CLIENTS_LEFT.incrementAndGet(), 0
 
 				));
 
@@ -296,8 +289,22 @@ public final class App extends Application {
 
 	@Override
 	public void stop() throws Exception {
+		try {
+
+			final Object lock = App.JAVAFX_APP_THREAD_LOCK;
+
+			while (true) {
+				synchronized (lock) {
+					lock.wait();
+				}
+			}
+
+		} catch (final InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+
 		Backend.shutdown();
-		// System.exit(1); // COULD BE a JavaFX crash!
+		System.exit(1); // COULD BE a JavaFX crash!
 	}
 
 	@Override
@@ -354,12 +361,14 @@ public final class App extends Application {
 		final double width = App.PRIMARY_SCREEN_WIDTH / 4;
 		final double height = App.PRIMARY_SCREEN_HEIGHT / 4;
 
-		// final var localDialog = WaitingDialogBuilder.open();
+		localStage.setOnCloseRequest(p_event -> {
+			// localStage.hide();
+		});
 
 		localStage.setResizable(true);
 		// stage.initStyle(StageStyle.TRANSPARENT);
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
-		localStage.setTitle(App.STRINGS.getString("StageTitles", "home"));
+		localStage.setTitle(App.STRINGS.getString("StageTitles", "showHome"));
 
 		localStage.setWidth(width);
 		localStage.setHeight(height);
@@ -411,8 +420,15 @@ public final class App extends Application {
 			final boolean onlyCtrl = ctrl && !(alt || meta || shift);
 			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
 
-			// Help menu:
+			// All operations:
 			switch (key) {
+
+				case L -> {
+					if (!onlyCtrl)
+						return;
+
+					StageLayoutChooser.show();
+				}
 
 				default -> {
 					// No defaults!
@@ -423,12 +439,18 @@ public final class App extends Application {
 						StageHelp.show();
 				}
 
-				case L -> {
-					if (!onlyCtrl)
+				case DELETE -> {
+					if (!onlyShiftCtrl) {
+						App.onOptionSelection(OptionsHome.REMOVE);
 						return;
+					}
 
-					StageLayoutChooser.show();
+					App.onOptionSelection(OptionsHome.STOP);
 				}
+
+				case INSERT -> App.onOptionSelection(OptionsHome.ADD);
+
+				case ENTER -> App.onOptionSelection(OptionsHome.CONTROLS);
 
 			}
 
@@ -446,9 +468,9 @@ public final class App extends Application {
 
 			final double speedFactor =
 					/* */ (onlyCtrl // Holding only `Ctrl` => slow and steady (`1px`).
-							? 1
+							? 15
 							: (onlyShiftCtrl // With `Shift`, it goes a bit faster (`15px`).
-									? 15
+									? 35
 									: 0)); // If NONE of those keys are active, nothing (`0px`)!
 
 			final double velocity = directionFactor * speedFactor;
@@ -543,28 +565,7 @@ public final class App extends Application {
 				}
 
 				default -> {
-					// No defaults...
-				}
-			}
-
-			// This one performs actual operations:
-			switch (p_event.getCode()) {
-
-				case INSERT -> App.onOptionSelection(OptionHome.ADD);
-
-				case DELETE -> {
-					if (!onlyShiftCtrl) {
-						App.onOptionSelection(OptionHome.REMOVE);
-						return;
-					}
-
-					App.onOptionSelection(OptionHome.STOP);
-				}
-
-				case ENTER -> App.onOptionSelection(OptionHome.CONTROLS);
-
-				default -> {
-					// No defaults...
+					// No defaults!
 				}
 			}
 		});
@@ -683,7 +684,7 @@ public final class App extends Application {
 		final var localLabelOptionsList = App.labelOptionsList;
 
 		localListView.requestFocus();
-		localListView.getItems().addAll(OptionHome.valuesOrdered());
+		localListView.getItems().addAll(OptionsHome.valuesOrdered());
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;");
@@ -708,10 +709,10 @@ public final class App extends Application {
 		});
 
 		localListView.setCellFactory(p_listView -> {
-			final var toRet = new ListCell<OptionHome>() {
+			final var toRet = new ListCell<OptionsHome>() {
 
 				@Override
-				protected void updateItem(final OptionHome p_option, final boolean p_isEmpty) {
+				protected void updateItem(final OptionsHome p_option, final boolean p_isEmpty) {
 					super.updateItem(p_option, p_isEmpty);
 
 					if (super.isFocused() && localListView.isFocused())
@@ -736,7 +737,7 @@ public final class App extends Application {
 								case PRIMARY -> App.onOptionSelection(selectedOption);
 
 								default -> {
-									//
+									// No defaults!
 								}
 
 							}
@@ -778,14 +779,14 @@ public final class App extends Application {
 	}
 
 	private void initSeparatorButton() {
-		final var localSep = App.buttonSeparator;
 		final var localLabelClients = App.labelClientsList;
 		final var localListViewClients = App.listViewClients;
+		final var localButtonSeparator = App.buttonSeparator;
 
-		localSep.setFocusTraversable(false);
-		localSep.setCursor(Cursor.OPEN_HAND);
-		localSep.setPrefHeight(App.PRIMARY_SCREEN_HEIGHT);
-		localSep.setStyle("-fx-background-color: rgb(50, 50, 50);");
+		localButtonSeparator.setFocusTraversable(false);
+		localButtonSeparator.setCursor(Cursor.OPEN_HAND);
+		localButtonSeparator.setPrefHeight(App.PRIMARY_SCREEN_HEIGHT);
+		localButtonSeparator.setStyle("-fx-background-color: rgb(50, 50, 50);");
 
 		final var lastClickTime = new AtomicLong();
 		final var isDragging = new AtomicBoolean();
@@ -800,20 +801,20 @@ public final class App extends Application {
 			localListViewClients.setPrefWidth(mouseX);
 		};
 
-		localSep.setOnDragDetected(p_eventPressed -> {
+		localButtonSeparator.setOnDragDetected(p_eventPressed -> {
 			isDragging.set(true);
-			localSep.setCursor(Cursor.CLOSED_HAND);
+			localButtonSeparator.setCursor(Cursor.CLOSED_HAND);
 
 			// System.out.println("Dragging detected!");
-			localSep.setOnMouseDragged(localCbckMouseDrag);
+			localButtonSeparator.setOnMouseDragged(localCbckMouseDrag);
 
-			localSep.setOnMouseReleased(p_eventReleased -> {
+			localButtonSeparator.setOnMouseReleased(p_eventReleased -> {
 				isDragging.set(false);
-				localSep.setCursor(Cursor.OPEN_HAND);
+				localButtonSeparator.setCursor(Cursor.OPEN_HAND);
 
 				// No more useless checks now!:
-				localSep.setOnMouseDragged(null);
-				localSep.setOnMouseReleased(null);
+				localButtonSeparator.setOnMouseDragged(null);
+				localButtonSeparator.setOnMouseReleased(null);
 
 				// System.out.println("Dragging completed.");
 			});
