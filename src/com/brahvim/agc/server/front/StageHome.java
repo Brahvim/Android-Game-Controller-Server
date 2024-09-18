@@ -39,9 +39,8 @@ public final class StageHome {
 	private static HBox paneRow1 = null; // NOSONAR!
 	private static HBox paneRow2 = null; // NOSONAR!
 	private static Button buttonSeparator = null; // NOSONAR!
-	private static Label labelClientsList = null; // NOSONAR!
-	private static Label labelOptionsList = null; // NOSONAR!
-	// private static ArrayList<KeyCode> pressedKeys = new ArrayList<>();
+	private static Label labelListClients = null; // NOSONAR!
+	private static Label labelListOptions = null; // NOSONAR!
 	private static ListView<Client> listViewClients = null; // NOSONAR!
 	private static ListView<OptionsHome> listViewOptions = null; // NOSONAR!
 	// endregion
@@ -103,8 +102,8 @@ public final class StageHome {
 	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
 		final var localListViewClients = StageHome.listViewClients;
 		final var localListViewOptions = StageHome.listViewOptions;
-		final var localLabelClientsList = StageHome.labelClientsList;
-		final var localLabelOptionsList = StageHome.labelOptionsList;
+		final var localLabelClientsList = StageHome.labelListClients;
+		final var localLabelOptionsList = StageHome.labelListOptions;
 
 		localListViewClients.setPrefWidth((localListViewClients.getPrefWidth() / p_oldValue) * p_newValue);
 		localListViewOptions.setPrefWidth((localListViewOptions.getPrefWidth() / p_oldValue) * p_newValue);
@@ -132,7 +131,7 @@ public final class StageHome {
 
 				client.setUiEntry(App.STRINGS.getFormatted(
 
-						"ListClients", "waiting", Backend.INT_CLIENTS_LEFT.incrementAndGet(), 0
+						"ListHomeClients", "waiting", Backend.INT_CLIENTS_LEFT.incrementAndGet(), 0
 
 				));
 
@@ -167,9 +166,9 @@ public final class StageHome {
 				System.out.printf("Removed clients %s.%n", selections);
 			}
 
-			case LAYOUT -> {
+			case PROFILES -> {
 				System.out.printf("Layout chooser for now visible for client %s.%n", selections);
-				StageLayoutChooser.show();
+				StageProfileChooser.show();
 			}
 
 			case CONTROLS -> {
@@ -185,8 +184,8 @@ public final class StageHome {
 	}
 
 	public static void show(final Stage p_initStage) {
-		final var localLabelClientsList = StageHome.labelClientsList = new Label("Phones:");
-		final var localLabelOptionsList = StageHome.labelOptionsList = new Label("Options:");
+		final var localLabelClientsList = StageHome.labelListClients = new Label("Phones:");
+		final var localLabelOptionsList = StageHome.labelListOptions = new Label("Options:");
 		final var localListViewClients = StageHome.listViewClients = new ListView<>();
 		final var localListViewOptions = StageHome.listViewOptions = new ListView<>();
 		final var localButtonSeparator = StageHome.buttonSeparator = new Button();
@@ -226,7 +225,7 @@ public final class StageHome {
 		localStage.setScene(localScene);
 		localStage.show();
 
-		// StageLayoutChooser.show();
+		// StageProfileChooser.show();
 
 		localStage.setX((App.PRIMARY_SCREEN_WIDTH / 2) - (localStage.getWidth() / 2));
 		localStage.setY((App.PRIMARY_SCREEN_HEIGHT / 2) - (localStage.getHeight() / 2));
@@ -244,7 +243,7 @@ public final class StageHome {
 		localStage.setResizable(true);
 		// stage.initStyle(StageStyle.TRANSPARENT);
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
-		localStage.setTitle(App.STRINGS.getString("StageTitles", "showHome"));
+		localStage.setTitle(App.STRINGS.getString("StageTitles", "home"));
 
 		localStage.setWidth(width);
 		localStage.setHeight(height);
@@ -258,8 +257,8 @@ public final class StageHome {
 		final var localListViewClients = StageHome.listViewClients;
 		final var localListViewOptions = StageHome.listViewOptions;
 
-		final var localLabelOptionsList = StageHome.labelOptionsList;
-		final var localLabelClientsList = StageHome.labelClientsList;
+		final var localLabelOptionsList = StageHome.labelListOptions;
+		final var localLabelClientsList = StageHome.labelListClients;
 
 		localStage.widthProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			StageHome.onListViewsWiden(p_newValue.doubleValue(), p_oldValue.doubleValue());
@@ -275,19 +274,8 @@ public final class StageHome {
 		final var localPaneRoot = StageHome.paneRoot;
 		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Repeated 9 times, but it's CSS!
 
-		// JavaFxApp.paneRoot.getChildren().forEach(c -> {
-		// final var cbckKeyPress = c.getOnKeyPressed();
-		// });
-
-		// localPaneRoot.setOnKeyReleased(p_event ->
-		// StageHome.pressedKeys.remove(p_event.getCode()));
-
 		App.prependEventHandler(localPaneRoot.onKeyPressedProperty(), p_event -> {
 			final KeyCode key = p_event.getCode();
-
-			// if (!StageHome.pressedKeys.contains(key))
-			// StageHome.pressedKeys.add(key);
-
 			final boolean alt = p_event.isAltDown();
 			final boolean meta = p_event.isMetaDown();
 			final boolean shift = p_event.isShiftDown();
@@ -304,7 +292,7 @@ public final class StageHome {
 					if (!onlyCtrl)
 						return;
 
-					StageLayoutChooser.show();
+					StageProfileChooser.show();
 				}
 
 				default -> {
@@ -352,7 +340,7 @@ public final class StageHome {
 
 			final double velocity = directionFactor * speedFactor;
 
-			final var localLabelClients = StageHome.labelClientsList;
+			final var localLabelClients = StageHome.labelListClients;
 			final var localListViewClients = StageHome.listViewClients;
 
 			// final var localLabelOptions = JavaFxApp.labelForOptionsList;
@@ -372,7 +360,7 @@ public final class StageHome {
 	@SuppressWarnings("unchecked")
 	private static void initClientsList() {
 		final var localListView = StageHome.listViewClients;
-		final var localLabelClientsList = StageHome.labelClientsList;
+		final var localLabelClientsList = StageHome.labelListClients;
 
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localLabelClientsList.setStyle("-fx-text-fill: gray;"); // NOSONAR! Can't! It's CSS!
@@ -558,7 +546,7 @@ public final class StageHome {
 
 	private static void initOptionsList() {
 		final var localListView = StageHome.listViewOptions;
-		final var localLabelOptionsList = StageHome.labelOptionsList;
+		final var localLabelOptionsList = StageHome.labelListOptions;
 
 		localListView.requestFocus();
 		localListView.getItems().addAll(OptionsHome.valuesOrdered());
@@ -656,7 +644,7 @@ public final class StageHome {
 	}
 
 	private static void initSeparatorButton() {
-		final var localLabelClients = StageHome.labelClientsList;
+		final var localLabelClients = StageHome.labelListClients;
 		final var localListViewClients = StageHome.listViewClients;
 		final var localButtonSeparator = StageHome.buttonSeparator;
 

@@ -7,8 +7,8 @@ public enum OptionsHome {
 	ADD(),
 	STOP(),
 	REMOVE(),
-	LAYOUT(),
 	CONTROLS(),
+	PROFILES(),
 
 	/* */ ;
 
@@ -22,7 +22,7 @@ public enum OptionsHome {
 			ADD,
 			STOP,
 			REMOVE,
-			LAYOUT,
+			PROFILES,
 			CONTROLS,
 
 	};
@@ -35,8 +35,8 @@ public enum OptionsHome {
 
 	private OptionsHome() {
 		final String myName = this.name();
-		this.TOOLTIP = App.STRINGS.getString("TooltipsListOptions", myName);
-		this.LABEL = App.STRINGS.getString("ListOptions", myName);
+		this.TOOLTIP = App.STRINGS.getString("TooltipsHomeListOptions", myName);
+		this.LABEL = App.STRINGS.getString("ListHomeOptions", myName);
 	}
 
 	public static OptionsHome[] valuesOrdered() {

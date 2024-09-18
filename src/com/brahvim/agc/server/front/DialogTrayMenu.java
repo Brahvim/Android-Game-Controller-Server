@@ -72,7 +72,7 @@ public class DialogTrayMenu {
 
 			case HOME -> StageHome.showStageFocusedAndCentered();
 
-			case LAYOUT -> StageLayoutChooser.showStageFocusedAndCentered();
+			case PROFILES -> StageProfileChooser.showStageFocusedAndCentered();
 
 		}
 	}

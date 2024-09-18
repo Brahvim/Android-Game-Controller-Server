@@ -8,7 +8,7 @@ public enum OptionsTray {
 	HOME(),
 	CLOSE(),
 	REMOVE(),
-	LAYOUT(),
+	PROFILES(),
 
 	/* */ ;
 
@@ -22,7 +22,7 @@ public enum OptionsTray {
 			// ADD,
 			HOME,
 			CLOSE,
-			LAYOUT,
+			PROFILES,
 
 	};
 
@@ -34,8 +34,8 @@ public enum OptionsTray {
 
 	private OptionsTray() {
 		final String myName = this.name();
-		this.LABEL = App.STRINGS.getString("ListTray", myName);
-		this.TOOLTIP = App.STRINGS.getString("TooltipsListTray", myName);
+		this.LABEL = App.STRINGS.getString("ListTrayOptions", myName);
+		this.TOOLTIP = App.STRINGS.getString("TooltipsTrayListOptions", myName);
 	}
 
 	public static OptionsTray[] valuesOrdered() {
