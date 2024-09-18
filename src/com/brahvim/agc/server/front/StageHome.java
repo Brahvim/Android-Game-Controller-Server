@@ -2,7 +2,6 @@ package com.brahvim.agc.server.front;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.brahvim.agc.server.back.Backend;
@@ -30,6 +29,8 @@ import javafx.util.Duration;
 
 @SuppressWarnings("unused")
 public final class StageHome {
+
+	// TODO: Make options accessible only in clients list as per their tooltips.
 
 	// region Fields.
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
@@ -65,9 +66,7 @@ public final class StageHome {
 		final boolean ctrl = p_event.isControlDown();
 
 		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
-		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NONE of those keys are active, nothing!
-																		// (`0` px!)
-
+		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NO keys are active, nothing! (`0` px!)
 		// FIXME: If typing bugs, check *this out!:*
 
 		switch (p_event.getCode()) {
@@ -177,19 +176,24 @@ public final class StageHome {
 
 		}
 	}
+
 	// endregion
 	// endregion
-
-	public static void show() {
-	}
-
 	public static void show(final Stage p_initStage) {
-		final var localLabelClientsList = StageHome.labelListClients = new Label("Phones:");
-		final var localLabelOptionsList = StageHome.labelListOptions = new Label("Options:");
+		final var localLabelListClients = StageHome.labelListClients = new Label("Phones:");
+		final var localLabelListOptions = StageHome.labelListOptions = new Label("Options:");
 		final var localListViewClients = StageHome.listViewClients = new ListView<>();
 		final var localListViewOptions = StageHome.listViewOptions = new ListView<>();
 		final var localButtonSeparator = StageHome.buttonSeparator = new Button();
 		final var localStage = StageHome.stage = p_initStage;
+
+		final var localRow1 = StageHome.paneRow1 = new HBox(
+
+				localLabelListClients,
+				localLabelListOptions
+
+		);
+
 		final var localRow2 = StageHome.paneRow2 = new HBox(
 
 				localListViewClients,
@@ -198,8 +202,13 @@ public final class StageHome {
 
 		);
 
-		final var localRow1 = StageHome.paneRow1 = new HBox(localLabelClientsList, localLabelOptionsList);
-		final var localPaneRoot = StageHome.paneRoot = new VBox(localRow1, localRow2);
+		final var localPaneRoot = StageHome.paneRoot = new VBox(
+
+				localRow1,
+				localRow2
+
+		);
+
 		final var localScene = StageHome.scene = new Scene(localPaneRoot);
 
 		StageHome.initStage();
@@ -209,17 +218,16 @@ public final class StageHome {
 		StageHome.initSeparatorButton();
 
 		{
-			double stageWidthRatio;
-			stageWidthRatio = StageHome.stage.getWidth() / 2.8;
+			double ratioStageWidth;
+
+			ratioStageWidth = StageHome.stage.getWidth() / 2.8;
 			// (Surprisingly, that *was* the correct number to divide by.)
+			localListViewClients.setPrefWidth(ratioStageWidth);
+			localLabelListClients.setPrefWidth(ratioStageWidth);
 
-			localListViewClients.setPrefWidth(stageWidthRatio);
-			localLabelClientsList.setPrefWidth(stageWidthRatio);
-
-			stageWidthRatio = StageHome.stage.getWidth() - stageWidthRatio;
-
-			localLabelOptionsList.setPrefWidth(stageWidthRatio);
-			localListViewOptions.setPrefWidth(stageWidthRatio);
+			ratioStageWidth = StageHome.stage.getWidth() - ratioStageWidth;
+			localLabelListOptions.setPrefWidth(ratioStageWidth);
+			localListViewOptions.setPrefWidth(ratioStageWidth);
 		}
 
 		localStage.setScene(localScene);
@@ -227,8 +235,7 @@ public final class StageHome {
 
 		// StageProfileChooser.show();
 
-		localStage.setX((App.PRIMARY_SCREEN_WIDTH / 2) - (localStage.getWidth() / 2));
-		localStage.setY((App.PRIMARY_SCREEN_HEIGHT / 2) - (localStage.getHeight() / 2));
+		App.centerStage(localStage);
 	}
 
 	private static void initStage() {
@@ -236,12 +243,6 @@ public final class StageHome {
 		final double width = App.PRIMARY_SCREEN_WIDTH / 4;
 		final double height = App.PRIMARY_SCREEN_HEIGHT / 4;
 
-		localStage.setOnCloseRequest(p_event -> {
-			// localStage.hide();
-		});
-
-		localStage.setResizable(true);
-		// stage.initStyle(StageStyle.TRANSPARENT);
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
 		localStage.setTitle(App.STRINGS.getString("StageTitles", "home"));
 
@@ -253,12 +254,6 @@ public final class StageHome {
 
 		localStage.setMaxWidth(App.PRIMARY_SCREEN_WIDTH);
 		localStage.setMaxHeight(App.PRIMARY_SCREEN_HEIGHT);
-
-		final var localListViewClients = StageHome.listViewClients;
-		final var localListViewOptions = StageHome.listViewOptions;
-
-		final var localLabelOptionsList = StageHome.labelListOptions;
-		final var localLabelClientsList = StageHome.labelListClients;
 
 		localStage.widthProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			StageHome.onListViewsWiden(p_newValue.doubleValue(), p_oldValue.doubleValue());
@@ -549,7 +544,7 @@ public final class StageHome {
 		final var localLabelOptionsList = StageHome.labelListOptions;
 
 		localListView.requestFocus();
-		localListView.getItems().addAll(OptionsHome.valuesOrdered());
+		localListView.getItems().addAll(OptionsHome.ORDER_UI);
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;");
@@ -653,7 +648,6 @@ public final class StageHome {
 		localButtonSeparator.setPrefHeight(App.PRIMARY_SCREEN_HEIGHT);
 		localButtonSeparator.setStyle("-fx-background-color: rgb(50, 50, 50);");
 
-		final var lastClickTime = new AtomicLong();
 		final var isDragging = new AtomicBoolean();
 
 		final EventHandler<MouseEvent> localCbckMouseDrag = p_event -> {

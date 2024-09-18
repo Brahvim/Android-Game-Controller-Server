@@ -12,10 +12,10 @@ import com.brahvim.agc.server.front.App;
 public final class Client {
 
 	// region Fields.
-	/* NOSONAR */ public static final ArrayList<Thread> listThreadsUdp = new ArrayList<>(1);
-	/* NOSONAR */ public static final ArrayList<DatagramSocket> listSocksUdp = new ArrayList<>(1);
-	/* NOSONAR */ public static final IdentityHashMap<Integer, String> mapUiEntry = new IdentityHashMap<>(1);
-	/* NOSONAR */ public static final IdentityHashMap<Integer, Socket> mapSocksSsl = new IdentityHashMap<>(1);
+	public static final ArrayList<Thread> listThreadsUdp = new ArrayList<>(1);
+	public static final ArrayList<DatagramSocket> listSocksUdp = new ArrayList<>(1);
+	public static final IdentityHashMap<Integer, String> mapUiEntry = new IdentityHashMap<>(1);
+	public static final IdentityHashMap<Integer, Socket> mapSocksSsl = new IdentityHashMap<>(1);
 
 	private static final ArrayDeque<Integer> queueFreeIndices = new ArrayDeque<>(1);
 

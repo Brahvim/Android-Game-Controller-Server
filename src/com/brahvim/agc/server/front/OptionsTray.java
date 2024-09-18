@@ -16,8 +16,7 @@ public enum OptionsTray {
 	public final String LABEL;
 	public final String TOOLTIP;
 
-	private static final IdentityHashMap<String, OptionsTray> LABEL_ENUM_MAP = new IdentityHashMap<>();
-	private static final OptionsTray[] ORDER_UI = new OptionsTray[] {
+	public static final OptionsTray[] ORDER_UI = new OptionsTray[] { // NOSONAR! Speed!
 
 			// ADD,
 			HOME,
@@ -26,9 +25,11 @@ public enum OptionsTray {
 
 	};
 
+	private static final IdentityHashMap<String, OptionsTray> LABEL_ENUM_MAP = new IdentityHashMap<>();
+
 	static {
 		// Could be faster in order (in memory access terms!), right?!:
-		for (final var o : OptionsTray.valuesOrdered())
+		for (final var o : OptionsTray.ORDER_UI)
 			OptionsTray.LABEL_ENUM_MAP.put(o.LABEL, o);
 	}
 
@@ -36,10 +37,6 @@ public enum OptionsTray {
 		final String myName = this.name();
 		this.LABEL = App.STRINGS.getString("ListTrayOptions", myName);
 		this.TOOLTIP = App.STRINGS.getString("TooltipsTrayListOptions", myName);
-	}
-
-	public static OptionsTray[] valuesOrdered() {
-		return OptionsTray.ORDER_UI;
 	}
 
 	public static OptionsTray valueOfLabel(final String p_label) {

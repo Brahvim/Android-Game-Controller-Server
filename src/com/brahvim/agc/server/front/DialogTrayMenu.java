@@ -86,7 +86,7 @@ public class DialogTrayMenu {
 		final var localDialog = DialogTrayMenu.dialog;
 		final var paneRoot = localDialog.getDialogPane();
 		final var stage = (Stage) paneRoot.getScene().getWindow(); // `Stage` in `HeavyweightDialog`.
-		final var listViewItems = FXCollections.observableArrayList(OptionsTray.valuesOrdered());
+		final var listViewItems = FXCollections.observableArrayList(OptionsTray.ORDER_UI);
 
 		localDialog.initStyle(StageStyle.TRANSPARENT);
 		localDialog.initModality(Modality.APPLICATION_MODAL);
