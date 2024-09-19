@@ -62,9 +62,8 @@ public final class StageProfileChooser {
 		if (localStageHome == null)
 			App.centerOnPrimaryScreen(localStageProfiles);
 		else {
-			final var rectScreenStageRef = App.getMostCoveredScreen(localStageHome).getVisualBounds();
-			localStageProfiles.setX(App.findSmartX(localStageHome, localStageProfiles, rectScreenStageRef));
-			localStageProfiles.setY(App.findSmartY(localStageHome, localStageProfiles, rectScreenStageRef));
+			localStageProfiles.setX(App.SMARTLY_POSITION_STAGE_X.find(localStageHome, localStageProfiles));
+			localStageProfiles.setY(App.SMARTLY_POSITION_STAGE_Y.find(localStageHome, localStageProfiles));
 		}
 
 	}

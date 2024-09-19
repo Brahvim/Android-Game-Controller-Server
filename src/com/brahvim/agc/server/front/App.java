@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.function.Supplier;
 
 import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.StringTable;
@@ -31,42 +30,24 @@ public class App extends Application {
 
 	// region Fields.
 	public static final Font FONT_LARGE = new Font(18);
+	public static final Image AGC_ICON_IMAGE = App.loadAgcIcon();
 	public static final Screen PRIMARY_SCREEN = Screen.getPrimary();
 	public static final Object JAVAFX_APP_THREAD_LOCK = new Object();
-	public static final Image AGC_ICON_IMAGE = ((Supplier<Image>) () -> {
-
-		try (final FileInputStream fis = new FileInputStream("./res/images/icon-192.png")) {
-			return new Image(fis);
-		} catch (final IOException e) {
-			System.err.println("Icon image not found. It will now be grey.");
-
-			final WritableImage toRet = new WritableImage(192, 192);
-			final int width = (int) toRet.getWidth(), height = (int) toRet.getHeight();
-			final int[] pixels = new int[width * height];
-
-			Arrays.fill(pixels, 0xFF888888); // Grey.
-
-			toRet.getPixelWriter().setPixels(
-
-					0, 0, // From,
-					width, height, // To,
-					PixelFormat.getIntArgbPreInstance(), // Encoding,
-					pixels, // Data,
-					0, // **Array** offset,
-					width // Stride - size of row. Image must be rectangular, LOL.
-
-			);
-
-			return toRet;
-		}
-
-	}).get();
-	public static final ArrayList<Client> LIST_CLIENTS_WAITING = new ArrayList<>(); // NOSONAR!
+	public static final ArrayList<Client> LIST_CLIENTS_WAITING = new ArrayList<>();
 	public static final boolean ON_MULTI_MONITOR_SETUP = Screen.getScreens().size() > 1;
 	public static final Rectangle2D PRIMARY_SCREEN_RECT = App.PRIMARY_SCREEN.getBounds();
 	public static final double PRIMARY_SCREEN_WIDTH = App.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = App.PRIMARY_SCREEN_RECT.getHeight();
 	public static final StringTable STRINGS = StringTable.tryCreating("./res/strings/AgcStringTable.ini");
+
+	public static final StageSmartResizeFunction SMARTLY_POSITION_STAGE_X = App.ON_MULTI_MONITOR_SETUP
+			? StageSmartResizeFunction::implMultiX
+			: StageSmartResizeFunction::implSingleX;
+
+	public static final StageSmartResizeFunction SMARTLY_POSITION_STAGE_Y = App.ON_MULTI_MONITOR_SETUP
+			? StageSmartResizeFunction::implMultiY
+			: StageSmartResizeFunction::implSingleY;
+
 	// endregion
 
 	// region Static methods.
@@ -239,6 +220,38 @@ public class App extends Application {
 		EventQueue.invokeLater(AgcTrayIcon::getTrayIcon); // `SwingUtilities.invokeLater()` throws up :/
 	}
 
+	public static void smartlyPositionSecondOfStages(final Stage p_reference, final Stage p_toPosition) {
+		p_toPosition.setX(App.SMARTLY_POSITION_STAGE_X.find(p_reference, p_toPosition));
+		p_toPosition.setY(App.SMARTLY_POSITION_STAGE_Y.find(p_reference, p_toPosition));
+	}
+
+	private static Image loadAgcIcon() {
+		try (final FileInputStream fis = new FileInputStream("./res/images/icon-192.png")) {
+			return new Image(fis);
+		} catch (final IOException e) {
+			System.err.println("Icon image not found. It will now be grey.");
+
+			final WritableImage toRet = new WritableImage(192, 192);
+			final int width = (int) toRet.getWidth(), height = (int) toRet.getHeight();
+			final int[] pixels = new int[width * height];
+
+			Arrays.fill(pixels, 0xFF888888); // Grey.
+
+			toRet.getPixelWriter().setPixels(
+
+					0, 0, // From,
+					width, height, // To,
+					PixelFormat.getIntArgbPreInstance(), // Encoding,
+					pixels, // Data,
+					0, // **Array** offset,
+					width // Stride - size of row. Image must be rectangular, LOL.
+
+			);
+
+			return toRet;
+		}
+	}
+
 	@Override
 	public void start(final Stage p_stage) {
 		// FIXME: Do not forget to remove this!
@@ -264,105 +277,6 @@ public class App extends Application {
 
 		Backend.shutdown();
 		System.exit(1); // COULD BE a JavaFX crash!
-	}
-
-	public static double findSmartX(
-
-			final Stage p_reference,
-			final Stage p_toPosition,
-			final Rectangle2D p_rectRefStageScreen
-
-	) {
-		// Derived from `p_reference`'s rect:
-		final double stageRefX = p_reference.getX();
-		// final double stageRefWidth = p_reference.getWidth();
-
-		// `p_toPosition`'s dimensions:
-		final double stageMyWidth = p_toPosition.getWidth();
-
-		// Calculation cache:
-		// final double stageRefRight = stageRefX + stageRefWidth;
-
-		// final double screenLeft = p_rectRefStageScreen.getMinX();
-		// final double screenRight = p_rectRefStageScreen.getMaxX();
-
-		// "Is it" LOL?
-		// final boolean isRefOnLeftOrBeyond = stageRefX <= screenLeft;
-		// final boolean isRefOnRightOrBeyond = stageRefRight >= screenRight;
-
-		final double screenHalf = p_rectRefStageScreen.getWidth() / 2;
-
-		final double stageMyX = stageRefX +
-				(screenHalf > stageRefX
-						? +stageMyWidth
-						: -stageMyWidth // For `isRefOnRightOrBeyond`.
-				);
-
-		// if (isRefOnRightOrBeyond) {
-		// stageMyX = stageRefX - stageMyWidth; // Touch right of ref `Stage`, by going
-		// to its left!
-		// } else if (isRefOnLeftOrBeyond) {
-		// stageMyX = stageRefRight; // Touch left of ref `Stage`, by going to its
-		// right!
-		// }
-
-		// "Project" to screen boundaries if the reference `Stage` is outside it
-		// (put against corner rather than edge):
-
-		// if (stageMyX + stageMyWidth > screenRight) {
-		// stageMyX = screenRight - stageMyWidth; // Keep to right edge of screen, left
-		// of ref.
-		// } else if (stageMyX < screenLeft) {
-		// stageMyX = screenLeft; // Keep to left edge of screen; right of ref.
-		// }
-
-		return stageMyX;
-	}
-
-	public static double findSmartY(
-
-			final Stage p_reference,
-			final Stage p_toPosition,
-			final Rectangle2D p_rectRefStageScreen
-
-	) {
-		// Derived from `p_reference`'s rect:
-		final double stageRefY = p_reference.getY();
-		// final double stageRefHeight = p_reference.getHeight();
-
-		// `p_toPosition`'s dimensions:
-		// final double stageMyHeight = p_toPosition.getHeight();
-
-		// // Calculation cache:
-		// final double stageRefBottom = stageRefY + stageRefHeight;
-
-		// final double screenTop = p_rectRefStageScreen.getMinY();
-		// final double screenBottom = p_rectRefStageScreen.getMaxY();
-
-		// "Is it" LOL?
-		// final boolean isRefOnTopOrBeyond = stageRefY <= screenTop;
-		// final boolean isRefOnBottomOrBeyond = stageRefBottom >= screenBottom;
-
-		final double stageMyY = stageRefY; // Add/Subtract `stageMyHeight` to have this adjust.
-		// ...But you might want to make `x` constant before you *"dynamicize"* this.
-
-		// if (isRefOnBottomOrBeyond) {
-		// stageMyY = stageRefY - stageMyHeight; // Touch right of ref `Stage`, by going
-		// to its left!
-		// } else if (isRefOnTopOrBeyond) {
-		// stageMyY = stageRefBottom;
-		// }
-
-		// "Project" to screen boundaries if the reference `Stage` is outside it
-		// (put against corner rather than edge):
-
-		// if (stageMyY + stageMyHeight > screenBottom) {
-		// stageMyY = screenBottom - stageMyHeight; // Be above ref,
-		// } else if (stageMyY < screenTop) {
-		// stageMyY = screenTop; // Be below ref.
-		// }
-
-		return stageMyY;
 	}
 
 }

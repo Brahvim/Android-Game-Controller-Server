@@ -30,7 +30,7 @@ import javafx.util.Duration;
 @SuppressWarnings("unused")
 public final class StageHome {
 
-	// TODO: Number keys as shortcuts?
+	// TODO: Number keys as shortcuts? SCROLLING to go through `ListView`s?!
 
 	// region Fields.
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
@@ -397,6 +397,8 @@ public final class StageHome {
 					case SPACE, ENTER -> StageHome.onOptionSelection(OptionsHome.CONTROLS);
 
 				}
+
+				return;
 			}
 
 			final var localListViewOptions = StageHome.listViewOptions;
