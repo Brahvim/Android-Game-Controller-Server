@@ -19,8 +19,8 @@ public enum OptionsProfiles {
 
 			ADD,
 			REMOVE,
-			IMPORT,
 			EXPORT,
+			IMPORT,
 
 	};
 

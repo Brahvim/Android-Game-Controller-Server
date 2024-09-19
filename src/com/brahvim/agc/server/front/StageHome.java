@@ -30,7 +30,7 @@ import javafx.util.Duration;
 @SuppressWarnings("unused")
 public final class StageHome {
 
-	// TODO: Make options accessible only in clients list as per their tooltips.
+	// TODO: Number keys as shortcuts?
 
 	// region Fields.
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
@@ -162,13 +162,13 @@ public final class StageHome {
 				StageHome.listViewClients.getSelectionModel().clearSelection();
 				// optionSelections.clearSelection();
 
+				if (App.LIST_CLIENTS_WAITING.isEmpty())
+					Backend.INT_CLIENTS_LEFT.set(0);
+
 				System.out.printf("Removed clients %s.%n", selections);
 			}
 
-			case PROFILES -> {
-				System.out.printf("Layout chooser for now visible for client %s.%n", selections);
-				StageProfileChooser.show();
-			}
+			case PROFILES -> StageProfileChooser.show();
 
 			case CONTROLS -> {
 				System.out.printf("Controls for clients %s now visible.%n", selections);
@@ -179,9 +179,18 @@ public final class StageHome {
 
 	// endregion
 	// endregion
-	public static void show(final Stage p_initStage) {
-		final var localLabelListClients = StageHome.labelListClients = new Label("Phones:");
+
+	public static void show() {
+		StageHome.stage.show();
+	}
+
+	public static void close() {
+		StageHome.stage.close();
+	}
+
+	public static void init(final Stage p_initStage) {
 		final var localLabelListOptions = StageHome.labelListOptions = new Label("Options:");
+		final var localLabelListClients = StageHome.labelListClients = new Label("Phones:");
 		final var localListViewClients = StageHome.listViewClients = new ListView<>();
 		final var localListViewOptions = StageHome.listViewOptions = new ListView<>();
 		final var localButtonSeparator = StageHome.buttonSeparator = new Button();
@@ -278,17 +287,11 @@ public final class StageHome {
 
 			final boolean noMods = !(ctrl || shift || alt || meta);
 			final boolean onlyCtrl = ctrl && !(alt || meta || shift);
+			final boolean onlyShift = shift && !(ctrl || alt || meta);
 			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
 
 			// All operations:
 			switch (key) {
-
-				case L -> {
-					if (!onlyCtrl)
-						return;
-
-					StageProfileChooser.show();
-				}
 
 				default -> {
 					// No defaults!
@@ -300,17 +303,13 @@ public final class StageHome {
 				}
 
 				case DELETE -> {
-					if (!onlyShiftCtrl) {
-						StageHome.onOptionSelection(OptionsHome.REMOVE);
+					if (!onlyShiftCtrl)
 						return;
-					}
 
 					StageHome.onOptionSelection(OptionsHome.STOP);
 				}
-
+				case P -> StageProfileChooser.show();
 				case INSERT -> StageHome.onOptionSelection(OptionsHome.ADD);
-
-				case ENTER -> StageHome.onOptionSelection(OptionsHome.CONTROLS);
 
 			}
 
@@ -365,17 +364,12 @@ public final class StageHome {
 		final var startCell = new AtomicReference<ListCell<Client>>();
 
 		final var localListViewSelectionModel = localListView.getSelectionModel();
-
-		localListViewSelectionModel.setSelectionMode(SelectionMode.MULTIPLE);
-
 		final var localListViewSelections = localListViewSelectionModel.getSelectedItems();
+		localListViewSelectionModel.setSelectionMode(SelectionMode.MULTIPLE);
 
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localListView.setOnKeyPressed(p_event -> {
-			final var localListViewOptions = StageHome.listViewOptions;
-
-			final var model = localListViewOptions.getSelectionModel();
-			final var option = model.getSelectedItem();
+			final var code = p_event.getCode();
 
 			final boolean alt = p_event.isAltDown();
 			final boolean meta = p_event.isMetaDown();
@@ -383,17 +377,35 @@ public final class StageHome {
 			final boolean ctrl = p_event.isControlDown();
 
 			final boolean onlyCtrl = ctrl && !(shift && alt || meta);
+			final boolean onlyShift = shift && !(ctrl || alt || meta);
 			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
 
 			// System.out.println("Key pressed with list-view in focus!");
 
+			final boolean isListEmpty = localListView.getItems().isEmpty();
+
+			if (!isListEmpty) {
+				switch (code) {
+
+					default -> {
+						// No defaults!
+					}
+
+					case DELETE -> StageHome.onOptionSelection(OptionsHome.REMOVE);
+
+					case SPACE, ENTER -> StageHome.onOptionSelection(OptionsHome.CONTROLS);
+
+				}
+			}
+
+			final var localListViewOptions = StageHome.listViewOptions;
+			final var model = localListViewOptions.getSelectionModel();
+			final var option = model.getSelectedItem();
+
 			// This one matters when the clients list is empty:
-			switch (p_event.getCode()) {
+			switch (code) {
 
 				case END, PAGE_DOWN -> {
-					if (!localListView.getItems().isEmpty())
-						return;
-
 					final var items = localListViewOptions.getItems();
 					final var selections = model.getSelectedItems();
 					model.clearAndSelect(items.size() - 1);
@@ -401,25 +413,16 @@ public final class StageHome {
 				}
 
 				case HOME, PAGE_UP -> {
-					if (!localListView.getItems().isEmpty())
-						return;
-
 					model.clearAndSelect(0);
 					localListViewOptions.requestFocus();
 				}
 
 				case DOWN -> {
-					if (!localListView.getItems().isEmpty())
-						return;
-
 					localListViewOptions.requestFocus();
 					model.clearAndSelect(model.getSelectedIndex() + 1);
 				}
 
 				case UP -> {
-					if (!localListView.getItems().isEmpty())
-						return;
-
 					localListViewOptions.requestFocus();
 					model.clearAndSelect(model.getSelectedIndex() - 1);
 				}
@@ -428,6 +431,7 @@ public final class StageHome {
 					// No defaults!
 				}
 			}
+
 		});
 		localListView.setCellFactory(p_listView -> {
 			final var toRet = new ListCell<Client>() {
@@ -449,6 +453,8 @@ public final class StageHome {
 				@Override
 				protected void updateItem(final Client p_client, final boolean p_isEmpty) {
 					super.updateItem(p_client, p_isEmpty);
+
+					super.setOnMouseClicked(p_event -> localListView.requestFocus());
 
 					if (p_isEmpty)
 						localListViewSelectionModel.clearSelection();

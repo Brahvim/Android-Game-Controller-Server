@@ -124,7 +124,9 @@ public class App extends Application {
 
 	@Override
 	public void start(final Stage p_stage) throws Exception {
-		StageHome.show(p_stage);
+		// FIXME: Do not forget to remove this!
+		StageHome.init(p_stage);
+		// StageProfileChooser.show();
 	}
 
 	@Override

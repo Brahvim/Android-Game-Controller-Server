@@ -21,6 +21,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+@SuppressWarnings("unused")
 public final class StageProfileChooser {
 
 	// region Fields.
@@ -54,8 +55,10 @@ public final class StageProfileChooser {
 
 		if (localStage.isShowing()) {
 			StageProfileChooser.listViewProfiles.requestFocus();
+
 		} else {
 			localStage.show();
+			App.centerStage(localStage);
 		}
 	}
 
@@ -91,7 +94,6 @@ public final class StageProfileChooser {
 		StageProfileChooser.listViewProfiles.setPrefHeight(p_listHeight);
 	}
 
-	@SuppressWarnings("unused")
 	private static void init() {
 		final var localStage = StageProfileChooser.stage = new Stage();
 
@@ -136,16 +138,10 @@ public final class StageProfileChooser {
 		);
 
 		{
-			double ratioStageWidth;
-
-			ratioStageWidth = StageProfileChooser.stage.getWidth() / 2.8;
-			// (Surprisingly, that *was* the correct number to divide by.)
-			localListViewProfiles.setPrefWidth(ratioStageWidth);
-			localLabelListProfiles.setPrefWidth(ratioStageWidth);
-
-			ratioStageWidth = StageProfileChooser.stage.getWidth() - ratioStageWidth;
-			localLabelListOptions.setPrefWidth(ratioStageWidth);
-			localListViewOptions.setPrefWidth(ratioStageWidth);
+			// TODO: Look into this.
+			final double ratioStageWidth = StageProfileChooser.stage.getWidth() / 2;
+			// localLabelListProfiles.setPrefWidth(ratioStageWidth);
+			// localLabelListOptions.setPrefWidth(ratioStageWidth);
 		}
 
 		final var localScene = StageProfileChooser.scene = new Scene(localPaneRoot);
@@ -155,8 +151,6 @@ public final class StageProfileChooser {
 		StageProfileChooser.initOptionsList();
 		StageProfileChooser.initProfilesList();
 		StageProfileChooser.initSeparatorButton();
-
-		App.centerStage(localStage);
 	}
 
 	private static void initStage() {
@@ -191,12 +185,19 @@ public final class StageProfileChooser {
 		final var localPaneRoot = StageProfileChooser.paneRoot;
 
 		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Dis CSS!
-
 		localPaneRoot.setOnKeyPressed(p_event -> {
+
+			final var model = StageProfileChooser.listViewProfiles.getSelectionModel();
+			final var selections = model.getSelectedItems();
+
 			switch (p_event.getCode()) {
 
-				case ESCAPE -> {
-					StageProfileChooser.close();
+				case Q -> {
+					System.out.println("Import dialog is up.");
+				}
+
+				case INSERT -> {
+					System.out.println("Profile creation dialog is up.");
 				}
 
 				default -> {
@@ -230,6 +231,8 @@ public final class StageProfileChooser {
 
 				// case ENTER, SPACE ->
 				// StageHome.onOptionSelection(selectedOption);
+
+				case ESCAPE -> StageProfileChooser.close();
 
 				default -> {
 					return;
@@ -330,10 +333,7 @@ public final class StageProfileChooser {
 
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localListView.setOnKeyPressed(p_event -> {
-			final var localListViewOptions = StageProfileChooser.listViewOptions;
-
-			final var model = localListViewOptions.getSelectionModel();
-			// final var option = model.getSelectedItem();
+			final var code = p_event.getCode();
 
 			// final boolean alt = p_event.isAltDown();
 			// final boolean meta = p_event.isMetaDown();
@@ -345,13 +345,29 @@ public final class StageProfileChooser {
 
 			// System.out.println("Key pressed with list-view in focus!");
 
-			// This one matters when the clients list is empty:
-			switch (p_event.getCode()) {
+			final boolean isListEmpty = localListView.getItems().isEmpty();
+
+			if (!isListEmpty) {
+				switch (code) {
+
+					default -> {
+						// No defaults!
+					}
+
+					case DELETE -> {
+						System.out.println("Exporting profile...");
+					}
+
+				}
+			}
+
+			final var localListViewOptions = StageProfileChooser.listViewOptions;
+			final var model = localListViewOptions.getSelectionModel();
+
+			// This one matters when the profiles list is empty:
+			switch (code) {
 
 				case END, PAGE_DOWN -> {
-					if (!localListView.getItems().isEmpty())
-						return;
-
 					final var items = localListViewOptions.getItems();
 					// final var selections = model.getSelectedItems();
 					model.clearAndSelect(items.size() - 1);
@@ -359,25 +375,18 @@ public final class StageProfileChooser {
 				}
 
 				case HOME, PAGE_UP -> {
-					if (!localListView.getItems().isEmpty())
-						return;
-
 					model.clearAndSelect(0);
 					localListViewOptions.requestFocus();
 				}
 
-				case DOWN -> {
-					if (!localListView.getItems().isEmpty())
-						return;
+				case ESCAPE -> StageProfileChooser.close();
 
+				case DOWN -> {
 					localListViewOptions.requestFocus();
 					model.clearAndSelect(model.getSelectedIndex() + 1);
 				}
 
 				case UP -> {
-					if (!localListView.getItems().isEmpty())
-						return;
-
 					localListViewOptions.requestFocus();
 					model.clearAndSelect(model.getSelectedIndex() - 1);
 				}
@@ -385,7 +394,9 @@ public final class StageProfileChooser {
 				default -> {
 					// No defaults!
 				}
+
 			}
+
 		});
 		localListView.setCellFactory(p_listView -> {
 			final var toRet = new ListCell<String>() {
