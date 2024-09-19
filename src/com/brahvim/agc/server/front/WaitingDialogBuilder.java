@@ -37,7 +37,7 @@ final class WaitingDialogBuilder {
 
 		// Add a listener to the dialog's width and height properties
 		final ChangeListener<? super Number> dimensionalChangesListener //
-				= (p_property, p_oldValue, p_newValue) -> WaitingDialogBuilder.sendDialogToCenter(dialog);
+				= (p_property, p_oldValue, p_newValue) -> App.sendDialogToCenter(dialog);
 
 		dialog.widthProperty().addListener(dimensionalChangesListener);
 		// dialog.heightProperty().addListener(dimensionalChangesListener);
@@ -57,12 +57,6 @@ final class WaitingDialogBuilder {
 		// Attach that guy to the listeners like I did above.
 
 		return dialog;
-	}
-
-	private static void sendDialogToCenter(final Dialog<?> p_dialog) {
-		// I was using the `Stage` instance instead. Oops!:
-		p_dialog.setX((App.PRIMARY_SCREEN_RECT.getWidth() - p_dialog.getWidth()) / 2);
-		p_dialog.setY((App.PRIMARY_SCREEN_RECT.getHeight() - p_dialog.getHeight()) / 2);
 	}
 
 	private static void addButtonsToPane(final DialogPane p_pane) {

@@ -55,7 +55,7 @@ public final class StageHome {
 		Platform.runLater(() -> {
 			StageHome.stage.show();
 			StageHome.stage.requestFocus();
-			App.centerStage(StageHome.stage);
+			StageHome.stage.centerOnScreen();
 		});
 	}
 
@@ -181,7 +181,11 @@ public final class StageHome {
 	// endregion
 
 	public static void show() {
+		if (StageHome.stage == null)
+			StageHome.init(new Stage());
+
 		StageHome.stage.show();
+		StageHome.stage.requestFocus();
 	}
 
 	public static void close() {
@@ -244,13 +248,13 @@ public final class StageHome {
 
 		// StageProfileChooser.show();
 
-		App.centerStage(localStage);
+		localStage.centerOnScreen();
 	}
 
 	private static void initStage() {
-		final Stage localStage = StageHome.stage;
-		final double width = App.PRIMARY_SCREEN_WIDTH / 4;
-		final double height = App.PRIMARY_SCREEN_HEIGHT / 4;
+		final var localStage = StageHome.stage;
+		final var width = App.PRIMARY_SCREEN_WIDTH / 4;
+		final var height = App.PRIMARY_SCREEN_HEIGHT / 4;
 
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
 		localStage.setTitle(App.STRINGS.getString("StageTitles", "home"));
@@ -299,7 +303,7 @@ public final class StageHome {
 
 				case F1 -> {
 					if (noMods)
-						StageHelp.show();
+						DialogHelp.show();
 				}
 
 				case DELETE -> {

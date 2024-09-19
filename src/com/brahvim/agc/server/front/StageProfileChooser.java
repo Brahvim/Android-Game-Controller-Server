@@ -52,14 +52,16 @@ public final class StageProfileChooser {
 			StageProfileChooser.init();
 
 		final var localStage = StageProfileChooser.stage;
+		StageProfileChooser.listViewOptions.requestFocus();
+		localStage.show();
+	}
 
-		if (localStage.isShowing()) {
-			StageProfileChooser.listViewProfiles.requestFocus();
+	public static synchronized void showBesideHomeStage() {
+		if (StageProfileChooser.stage == null)
+			StageProfileChooser.init();
 
-		} else {
-			localStage.show();
-			App.centerStage(localStage);
-		}
+		final var localStage = StageProfileChooser.stage;
+
 	}
 
 	public static synchronized void close() {
@@ -72,8 +74,7 @@ public final class StageProfileChooser {
 	public static void showStageFocusedAndCentered() {
 		Platform.runLater(() -> {
 			StageProfileChooser.show();
-			StageProfileChooser.stage.requestFocus();
-			App.centerStage(StageProfileChooser.stage);
+			StageProfileChooser.stage.centerOnScreen();
 		});
 	}
 
@@ -155,8 +156,13 @@ public final class StageProfileChooser {
 
 	private static void initStage() {
 		final var localStage = StageProfileChooser.stage;
-		final double width = App.PRIMARY_SCREEN_WIDTH / 4;
-		final double height = App.PRIMARY_SCREEN_HEIGHT / 4;
+		final var stageParent = localStage.getOwner();
+
+		final double screenWidth = stageParent.getWidth();
+		final double screenHeight = stageParent.getHeight();
+
+		final double width = screenWidth / 4;
+		final double height = screenHeight / 4;
 
 		localStage.setWidth(width);
 		localStage.setHeight(height);
@@ -164,8 +170,8 @@ public final class StageProfileChooser {
 		localStage.setMinWidth(120);
 		localStage.setMinHeight(120);
 
-		localStage.setMaxWidth(App.PRIMARY_SCREEN_WIDTH);
-		localStage.setMaxHeight(App.PRIMARY_SCREEN_HEIGHT);
+		localStage.setMaxWidth(screenWidth);
+		localStage.setMaxHeight(screenHeight);
 
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
 		localStage.setScene(StageProfileChooser.scene);

@@ -5,7 +5,9 @@ import java.awt.event.MouseEvent;
 import com.brahvim.agc.server.ExitCode;
 
 import javafx.animation.FadeTransition;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.event.EventHandler;
 import javafx.scene.Cursor;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar.ButtonData;
@@ -16,6 +18,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -61,6 +64,16 @@ public class DialogTrayMenu {
 		fadeOut.play();
 	}
 
+	public static void onListViewItemSelected(
+
+			final ObservableValue<OptionsTray> p_property, // NOSONAR, I need this for a callback...
+			final OptionsTray p_oldValue,
+			final OptionsTray p_newValue
+
+	) {
+		DialogTrayMenu.onListViewItemSelected(p_newValue);
+	}
+
 	public static void onListViewItemSelected(final OptionsTray p_item) {
 		switch (p_item) {
 
@@ -88,24 +101,7 @@ public class DialogTrayMenu {
 		final var stage = (Stage) paneRoot.getScene().getWindow(); // `Stage` in `HeavyweightDialog`.
 		final var listViewItems = FXCollections.observableArrayList(OptionsTray.ORDER_UI);
 
-		localDialog.initStyle(StageStyle.TRANSPARENT);
-		localDialog.initModality(Modality.APPLICATION_MODAL);
-		localDialog.setTitle(App.STRINGS.getString("StageTitles", "tray"));
-
-		stage.setWidth(400);
-		stage.setHeight(150);
-		stage.requestFocus();
-		stage.getIcons().add(App.AGC_ICON_IMAGE);
-		stage.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
-			if (p_newValue.booleanValue())
-				return;
-
-			stage.setAlwaysOnTop(false);
-			DialogTrayMenu.close();
-		});
-
-		paneRoot.getButtonTypes().clear();
-		paneRoot.setOnKeyPressed(p_event -> {
+		final EventHandler<? super KeyEvent> cbckKeyPressExitOnEsc = p_event -> {
 			final KeyCode key = p_event.getCode();
 
 			if (key != KeyCode.ESCAPE)
@@ -123,14 +119,36 @@ public class DialogTrayMenu {
 				return;
 
 			DialogTrayMenu.close();
+		};
+
+		localDialog.initStyle(StageStyle.TRANSPARENT);
+		localDialog.initModality(Modality.APPLICATION_MODAL);
+		localDialog.setTitle(App.STRINGS.getString("StageTitles", "tray"));
+
+		stage.setWidth(400);
+		stage.setHeight(150);
+		stage.requestFocus();
+		stage.getIcons().add(App.AGC_ICON_IMAGE);
+		stage.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
+			if (p_newValue.booleanValue())
+				return;
+
+			stage.setAlwaysOnTop(false);
+			DialogTrayMenu.close();
 		});
+
+		paneRoot.getButtonTypes().clear();
+		paneRoot.setOnKeyPressed(cbckKeyPressExitOnEsc);
 		paneRoot.setStyle("-fx-background-color: black;");
 		// paneRoot.setOnMouseExited(p_event -> DialogTrayMenu.close());
 
 		final var listView = new ListView<OptionsTray>(listViewItems);
 		final var listViewSelectionModel = listView.getSelectionModel();
 
-		listView.setStyle("-fx-background-color: black;");
+		listView.setTranslateY(16.25);
+		listView.setPrefWidth(stage.getWidth());
+		listView.setPrefHeight(stage.getHeight());
+
 		listView.setCellFactory(p_listView -> {
 			final var toRet = new ListCell<OptionsTray>() {
 
@@ -193,10 +211,8 @@ public class DialogTrayMenu {
 
 			return toRet;
 		});
-
-		listView.setPrefHeight(stage.getHeight());
-		listView.setPrefWidth(stage.getWidth());
-		listView.setTranslateY(16.25);
+		listView.setOnKeyPressed(cbckKeyPressExitOnEsc);
+		listView.setStyle("-fx-background-color: black;");
 
 		listViewSelectionModel.setSelectionMode(SelectionMode.SINGLE);
 		listViewSelectionModel.selectedItemProperty()

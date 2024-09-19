@@ -4,6 +4,7 @@ import java.awt.EventQueue;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import com.brahvim.agc.server.ExitCode;
@@ -17,7 +18,9 @@ import javafx.beans.property.ObjectProperty;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.control.Dialog;
 import javafx.scene.image.Image;
+import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
@@ -34,10 +37,24 @@ public class App extends Application {
 		try (final FileInputStream fis = new FileInputStream("./res/images/icon-192.png")) {
 			return new Image(fis);
 		} catch (final IOException e) {
-			System.err.println("ICON IMAGE NOT FOUND.");
+			System.err.println("Icon image not found. It will now be grey.");
 
-			final WritableImage toRet = new WritableImage(1, 1);
-			toRet.getPixelWriter().setArgb(0, 0, 0x00000000); // Transparent now.
+			final WritableImage toRet = new WritableImage(192, 192);
+			final int width = (int) toRet.getWidth(), height = (int) toRet.getHeight();
+			final int[] pixels = new int[width * height];
+
+			Arrays.fill(pixels, 0xFF888888); // Grey.
+
+			toRet.getPixelWriter().setPixels(
+
+					0, 0, // From,
+					width, height, // To,
+					PixelFormat.getIntArgbPreInstance(), // Encoding,
+					pixels, // Data,
+					0, // **Array** offset,
+					width // Stride - size of row. Image must be rectangular, LOL.
+
+			);
 
 			return toRet;
 		}
@@ -61,11 +78,6 @@ public class App extends Application {
 		System.out.print(ExitCode.ERROR_MESSAGE_PREFIX);
 		System.out.println(p_exitCode.errorMessage);
 		System.exit(p_exitCode.ordinal());
-	}
-
-	public static void centerStage(final Stage p_stage) {
-		p_stage.setX((App.PRIMARY_SCREEN_WIDTH / 2) - (p_stage.getWidth() / 2));
-		p_stage.setY((App.PRIMARY_SCREEN_HEIGHT / 2) - (p_stage.getHeight() / 2));
 	}
 
 	public static <EventT extends Event> void appendEventHandler(
@@ -110,6 +122,12 @@ public class App extends Application {
 			p_toPrepend.handle(p_event);
 			registered.handle(p_event);
 		});
+	}
+
+	public static void sendDialogToCenter(final Dialog<?> p_dialog) {
+		// I was using the `Stage` instance instead. Oops!:
+		p_dialog.setX((App.PRIMARY_SCREEN_RECT.getWidth() - p_dialog.getWidth()) / 2);
+		p_dialog.setY((App.PRIMARY_SCREEN_RECT.getHeight() - p_dialog.getHeight()) / 2);
 	}
 
 	public static void ensureArrayListSize(final ArrayList<?> p_list, final Integer p_minSize) {
