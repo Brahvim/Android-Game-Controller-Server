@@ -26,7 +26,8 @@ public final class StageProfileChooser {
 
 	// region Fields.
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
-	private static Stage stage; // NOSONAR!
+	static Stage stage; // NOSONAR!
+
 	private static Scene scene; // NOSONAR!
 	private static Pane paneRoot; // NOSONAR!
 	private static Pane paneRow1; // NOSONAR!
@@ -51,16 +52,23 @@ public final class StageProfileChooser {
 		if (StageProfileChooser.stage == null)
 			StageProfileChooser.init();
 
-		final var localStage = StageProfileChooser.stage;
+		final var localStageHome = StageHome.stage;
+		final var localStageProfiles = StageProfileChooser.stage;
+
 		StageProfileChooser.listViewOptions.requestFocus();
-		localStage.show();
-	}
+		localStageProfiles.show();
 
-	public static synchronized void showBesideHomeStage() {
-		if (StageProfileChooser.stage == null)
-			StageProfileChooser.init();
+		if (localStageHome == null)
+			App.centerOnPrimaryScreen(localStageProfiles);
+		else {
+			final var rectScreenStageRef = App.getMostCoveredScreen(localStageHome).getVisualBounds();
 
-		final var localStage = StageProfileChooser.stage;
+			final var nextX = App.findSmartXDefaultToSame(localStageHome, localStageProfiles, rectScreenStageRef);
+			final var nextY = App.findSmartYDefaultToSame(localStageHome, localStageProfiles, rectScreenStageRef);
+
+			localStageProfiles.setX(nextX);
+			localStageProfiles.setY(nextY);
+		}
 
 	}
 
@@ -72,10 +80,7 @@ public final class StageProfileChooser {
 	}
 
 	public static void showStageFocusedAndCentered() {
-		Platform.runLater(() -> {
-			StageProfileChooser.show();
-			StageProfileChooser.stage.centerOnScreen();
-		});
+		Platform.runLater(StageProfileChooser::show);
 	}
 
 	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
@@ -156,10 +161,9 @@ public final class StageProfileChooser {
 
 	private static void initStage() {
 		final var localStage = StageProfileChooser.stage;
-		final var stageParent = localStage.getOwner();
 
-		final double screenWidth = stageParent.getWidth();
-		final double screenHeight = stageParent.getHeight();
+		final double screenWidth = App.PRIMARY_SCREEN_WIDTH;
+		final double screenHeight = App.PRIMARY_SCREEN_HEIGHT;
 
 		final double width = screenWidth / 4;
 		final double height = screenHeight / 4;

@@ -12,6 +12,7 @@ public final class DialogHelp {
 	}
 
 	public static void show() {
+		final var localDialog = DialogHelp.dialog;
 		Window parent = null;
 
 		for (final var s : Window.getWindows()) {
@@ -19,10 +20,14 @@ public final class DialogHelp {
 				parent = s;
 		}
 
-		DialogHelp.dialog.show();
-		if (parent == null) {
-
+		localDialog.show();
+		if (parent == null)
+			App.centerOnPrimaryScreen(localDialog);
+		else {
+			localDialog.setX((parent.getWidth() - localDialog.getWidth()) / 2);
+			localDialog.setY((parent.getHeight() - localDialog.getHeight()) / 2);
 		}
+
 	}
 
 	public static void close() {

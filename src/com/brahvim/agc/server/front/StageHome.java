@@ -34,7 +34,8 @@ public final class StageHome {
 
 	// region Fields.
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
-	private static Stage stage = null; // NOSONAR!
+	static Stage stage = null; // NOSONAR!
+
 	private static Scene scene = null; // NOSONAR!
 	private static Pane paneRoot = null; // NOSONAR!
 	private static HBox paneRow1 = null; // NOSONAR!
@@ -230,25 +231,21 @@ public final class StageHome {
 		StageHome.initOptionsList();
 		StageHome.initSeparatorButton();
 
-		{
-			double ratioStageWidth;
+		double ratioStageWidth;
 
-			ratioStageWidth = StageHome.stage.getWidth() / 2.8;
-			// (Surprisingly, that *was* the correct number to divide by.)
-			localListViewClients.setPrefWidth(ratioStageWidth);
-			localLabelListClients.setPrefWidth(ratioStageWidth);
+		ratioStageWidth = StageHome.stage.getWidth() / 2.8;
+		// (Surprisingly, that *was* the correct number to divide by.)
+		localListViewClients.setPrefWidth(ratioStageWidth);
+		localLabelListClients.setPrefWidth(ratioStageWidth);
 
-			ratioStageWidth = StageHome.stage.getWidth() - ratioStageWidth;
-			localLabelListOptions.setPrefWidth(ratioStageWidth);
-			localListViewOptions.setPrefWidth(ratioStageWidth);
-		}
+		ratioStageWidth = StageHome.stage.getWidth() - ratioStageWidth;
+		localLabelListOptions.setPrefWidth(ratioStageWidth);
+		localListViewOptions.setPrefWidth(ratioStageWidth);
 
 		localStage.setScene(localScene);
 		localStage.show();
 
-		// StageProfileChooser.show();
-
-		localStage.centerOnScreen();
+		App.centerOnPrimaryScreen(localStage);
 	}
 
 	private static void initStage() {

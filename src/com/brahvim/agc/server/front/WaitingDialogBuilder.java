@@ -37,7 +37,7 @@ final class WaitingDialogBuilder {
 
 		// Add a listener to the dialog's width and height properties
 		final ChangeListener<? super Number> dimensionalChangesListener //
-				= (p_property, p_oldValue, p_newValue) -> App.sendDialogToCenter(dialog);
+				= (p_property, p_oldValue, p_newValue) -> dialog.getOwner().centerOnScreen();
 
 		dialog.widthProperty().addListener(dimensionalChangesListener);
 		// dialog.heightProperty().addListener(dimensionalChangesListener);

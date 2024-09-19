@@ -26,7 +26,7 @@ import javafx.util.Duration;
 
 public class DialogTrayMenu {
 
-	private static Dialog<Void> dialog;
+	static Dialog<Void> dialog;
 
 	private DialogTrayMenu() {
 		throw new IllegalAccessError();

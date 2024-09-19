@@ -22,6 +22,7 @@ import javafx.scene.control.Dialog;
 import javafx.scene.image.Image;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -60,7 +61,7 @@ public class App extends Application {
 		}
 
 	}).get();
-	public static final ArrayList<Client> LIST_CLIENTS_WAITING = new ArrayList<>(); // NOSONAR1
+	public static final ArrayList<Client> LIST_CLIENTS_WAITING = new ArrayList<>(); // NOSONAR!
 	public static final Rectangle2D PRIMARY_SCREEN_RECT = App.PRIMARY_SCREEN.getBounds();
 	public static final double PRIMARY_SCREEN_WIDTH = App.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = App.PRIMARY_SCREEN_RECT.getHeight();
@@ -68,38 +69,117 @@ public class App extends Application {
 	// endregion
 
 	// region Static methods.
-	public static void main(final String... p_args) {
-		Platform.setImplicitExit(false);
-		new Thread(Application::launch, "AGC:FX_APP_LAUNCHER").start();
-		EventQueue.invokeLater(AgcTrayIcon::getTrayIcon); // `SwingUtilities.invokeLater()` throws up :/
+	public static void ensureArrayListSize(final ArrayList<?> p_list, final Integer p_minSize) {
+		// `Collection::addAll()`? Well, no!
+		// Putting my own `Collection` subclass didn't exactly work out, and `List.of()`
+		// won't create a `List` with `null`s! (See its use of `ImmutableCollections`!)
+		p_list.ensureCapacity(p_minSize);
+
+		while (p_list.size() <= p_minSize)
+			p_list.add(null);
 	}
 
-	public static void exit(final ExitCode p_exitCode) {
-		System.out.print(ExitCode.ERROR_MESSAGE_PREFIX);
-		System.out.println(p_exitCode.errorMessage);
-		System.exit(p_exitCode.ordinal());
-	}
+	// region `getMostCoveredScreen(*)`.
+	// The implementation:
+	/** @return {@code null} if no {@link Screen} contains it. */
+	public static Screen getMostCoveredScreen(final Rectangle2D p_rect) {
+		Screen mostCoveredScreen = null;
+		double maxAreaRecord = 0;
 
-	public static <EventT extends Event> void appendEventHandler(
+		for (final Screen screen : Screen.getScreens()) {
+			final Rectangle2D
+			/*	 */ rectScreen = screen.getVisualBounds(),
+					rectInter;
 
-			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
-			final EventHandler<? super EventT> p_toAppend
+			final double x1 = Math.max(p_rect.getMinX(), rectScreen.getMinX());
+			final double y1 = Math.max(p_rect.getMinY(), rectScreen.getMinY());
+			final double x2 = Math.min(p_rect.getMaxX(), rectScreen.getMaxX());
+			final double y2 = Math.min(p_rect.getMaxY(), rectScreen.getMaxY());
 
-	) {
-		if (p_toAppend == null)
-			return;
+			// if (x2 >= x1 && y2 >= y1) // Let the math *be*.
+			rectInter = new Rectangle2D(x1, y1, x2 - x1, y2 - y1);
+			// else rectInter = null;
+			// Seriously, think about it: What if somebody has multiple monitors that WRAP?
 
-		final EventHandler<? super EventT> registered = p_handlerProperty.get();
+			// if (rectInter == null)
+			// return Screen.getPrimary();
 
-		if (registered == null) {
-			p_handlerProperty.set(p_toAppend);
-			return;
+			// (Area of intersection):
+			final double interArea = rectInter.getWidth() * rectInter.getHeight();
+
+			if (interArea > maxAreaRecord) {
+				maxAreaRecord = interArea;
+				mostCoveredScreen = screen;
+			}
 		}
 
-		p_handlerProperty.set(p_event -> {
-			registered.handle(p_event);
-			p_toAppend.handle(p_event);
-		});
+		return mostCoveredScreen;
+	}
+
+	/** @return {@code null} if no {@link Screen} contains it. */
+	public static Screen getMostCoveredScreen(final Dialog<?> p_dialog) {
+		return App.getMostCoveredScreen(new Rectangle2D(
+
+				p_dialog.getX(),
+				p_dialog.getY(),
+				p_dialog.getWidth(),
+				p_dialog.getHeight()
+
+		));
+	}
+
+	/** @return {@code null} if no {@link Screen} contains it. */
+	public static Screen getMostCoveredScreen(final Rectangle p_rect) {
+		return App.getMostCoveredScreen(new Rectangle2D(
+
+				p_rect.getX(),
+				p_rect.getY(),
+				p_rect.getWidth(),
+				p_rect.getHeight()
+
+		));
+	}
+
+	/** @return {@code null} if no {@link Screen} contains it. */
+	public static Screen getMostCoveredScreen(final Stage p_stage) {
+		return App.getMostCoveredScreen(new Rectangle2D(
+
+				p_stage.getX(),
+				p_stage.getY(),
+				p_stage.getWidth(),
+				p_stage.getHeight()
+
+		));
+	}
+
+	/** @return {@code null} if no {@link Screen} contains these. */
+	public static Screen getMostCoveredScreen(
+
+			final double p_x,
+			final double p_y,
+			final double p_width,
+			final double p_height
+
+	) {
+		return App.getMostCoveredScreen(new Rectangle2D(
+
+				p_x,
+				p_y,
+				p_width,
+				p_height
+
+		));
+	}
+	// endregion
+
+	public static void centerOnPrimaryScreen(final Dialog<?> p_dialog) {
+		p_dialog.setX((App.PRIMARY_SCREEN_WIDTH - p_dialog.getWidth()) / 2);
+		p_dialog.setY((App.PRIMARY_SCREEN_HEIGHT - p_dialog.getHeight()) / 2);
+	}
+
+	public static void centerOnPrimaryScreen(final Stage p_stage) {
+		p_stage.setX((App.PRIMARY_SCREEN_WIDTH - p_stage.getWidth()) / 2);
+		p_stage.setY((App.PRIMARY_SCREEN_HEIGHT - p_stage.getHeight()) / 2);
 	}
 
 	public static <EventT extends Event> void prependEventHandler(
@@ -124,31 +204,49 @@ public class App extends Application {
 		});
 	}
 
-	public static void sendDialogToCenter(final Dialog<?> p_dialog) {
-		// I was using the `Stage` instance instead. Oops!:
-		p_dialog.setX((App.PRIMARY_SCREEN_RECT.getWidth() - p_dialog.getWidth()) / 2);
-		p_dialog.setY((App.PRIMARY_SCREEN_RECT.getHeight() - p_dialog.getHeight()) / 2);
+	public static <EventT extends Event> void appendEventHandler(
+
+			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
+			final EventHandler<? super EventT> p_toAppend
+
+	) {
+		if (p_toAppend == null)
+			return;
+
+		final EventHandler<? super EventT> registered = p_handlerProperty.get();
+
+		if (registered == null) {
+			p_handlerProperty.set(p_toAppend);
+			return;
+		}
+
+		p_handlerProperty.set(p_event -> {
+			registered.handle(p_event);
+			p_toAppend.handle(p_event);
+		});
 	}
 
-	public static void ensureArrayListSize(final ArrayList<?> p_list, final Integer p_minSize) {
-		// `Collection::addAll()`? Well, no!
-		// Putting my own `Collection` subclass didn't exactly work out, and `List.of()`
-		// won't create a `List` with `null`s! (See its use of `ImmutableCollections`!)
-		p_list.ensureCapacity(p_minSize);
+	public static void exit(final ExitCode p_exitCode) {
+		System.out.print(ExitCode.ERROR_MESSAGE_PREFIX);
+		System.out.println(p_exitCode.errorMessage);
+		System.exit(p_exitCode.ordinal());
+	}
 
-		while (p_list.size() <= p_minSize)
-			p_list.add(null);
+	public static void main(final String... p_args) {
+		Platform.setImplicitExit(false);
+		new Thread(Application::launch, "AGC:FX_APP_LAUNCHER").start();
+		EventQueue.invokeLater(AgcTrayIcon::getTrayIcon); // `SwingUtilities.invokeLater()` throws up :/
 	}
 
 	@Override
-	public void start(final Stage p_stage) throws Exception {
+	public void start(final Stage p_stage) {
 		// FIXME: Do not forget to remove this!
 		StageHome.init(p_stage);
 		// StageProfileChooser.show();
 	}
 
 	@Override
-	public void stop() throws Exception {
+	public void stop() {
 		try {
 
 			final Object lock = App.JAVAFX_APP_THREAD_LOCK;
@@ -165,6 +263,336 @@ public class App extends Application {
 
 		Backend.shutdown();
 		System.exit(1); // COULD BE a JavaFX crash!
+	}
+
+	// Cheapest way to do this is to use a `double[]` and avoid using a `Point2D`.
+	// ...For now.
+	// I could split this into two methods,
+	// but any future experiments might then have a problem.
+	/*
+	 * public static double[] findSmartPositionForSecondOfStages(final Stage
+	 * p_reference, final Stage p_toPosition) {
+	 * final Rectangle2D rectRefStageScreen =
+	 * App.getMostCoveredScreen(p_reference).getVisualBounds();
+	 * 
+	 * // Derived from `p_reference`'s rect:
+	 * final double stageRefX = p_reference.getX();
+	 * final double stageRefY = p_reference.getY();
+	 * final double stageRefWidth = p_reference.getWidth();
+	 * final double stageRefHeight = p_reference.getHeight();
+	 * 
+	 * // `p_toPosition`'s dimensions:
+	 * final double stageMyWidth = p_toPosition.getWidth();
+	 * final double stageMyHeight = p_toPosition.getHeight();
+	 * 
+	 * // Calculation cache:
+	 * final double stageRefRight = stageRefX + stageRefWidth;
+	 * final double stageRefBottom = stageRefY + stageRefHeight;
+	 * 
+	 * final double screenTop = rectRefStageScreen.getMinY();
+	 * final double screenLeft = rectRefStageScreen.getMinX();
+	 * final double screenRight = rectRefStageScreen.getMaxX();
+	 * final double screenBottom = rectRefStageScreen.getMaxY();
+	 * 
+	 * // "Is it" LOL?
+	 * final boolean isRefOnTopOrBeyond = stageRefY <= screenTop;
+	 * final boolean isRefOnLeftOrBeyond = stageRefX <= screenLeft;
+	 * final boolean isRefOnRightOrBeyond = stageRefRight >= screenRight;
+	 * final boolean isRefOnBottomOrBeyond = stageRefBottom >= screenBottom;
+	 * 
+	 * double stageMyY = stageRefY;
+	 * double stageMyX = stageRefRight;
+	 * 
+	 * if (isRefOnRightOrBeyond) {
+	 * stageMyX = stageRefX - stageMyWidth; // Touch right of ref `Stage`, by going
+	 * to its left!
+	 * } else if (isRefOnLeftOrBeyond) {
+	 * stageMyX = stageRefRight; // Touch left of ref `Stage`, by going to its
+	 * right!
+	 * }
+	 * 
+	 * if (isRefOnBottomOrBeyond) {
+	 * stageMyY = stageRefY - stageMyHeight; // Touch right of ref `Stage`, by going
+	 * to its left!
+	 * } else if (isRefOnTopOrBeyond) {
+	 * stageMyY = stageRefBottom;
+	 * }
+	 * 
+	 * // "Project" to screen boundaries if the reference `Stage` is outside it:
+	 * 
+	 * if (stageMyX + stageMyWidth > screenRight) {
+	 * stageMyX = screenRight - stageMyWidth; // Keep to right edge of screen, left
+	 * of ref.
+	 * } else if (stageMyX < screenLeft) {
+	 * stageMyX = screenLeft; // Keep to left edge of screen; right of ref.
+	 * }
+	 * 
+	 * if (stageMyY + stageMyHeight > screenBottom) {
+	 * stageMyY = screenBottom - stageMyHeight; // Be above ref,
+	 * } else if (stageMyY < screenTop) {
+	 * stageMyY = screenTop; // Be below ref.
+	 * }
+	 * 
+	 * return new double[] { stageMyX, stageMyY };
+	 * }
+	 */
+
+	public static double findSmartYDefaultToBottom(
+
+			final Stage p_reference,
+			final Stage p_toPosition,
+			final Rectangle2D p_rectRefStageScreen
+
+	) {
+		// Derived from `p_reference`'s rect:
+		final double stageRefY = p_reference.getY();
+		final double stageRefHeight = p_reference.getHeight();
+
+		// `p_toPosition`'s dimensions:
+		final double stageMyHeight = p_toPosition.getHeight();
+
+		// Calculation cache:
+		final double stageRefBottom = stageRefY + stageRefHeight;
+
+		final double screenTop = p_rectRefStageScreen.getMinY();
+		final double screenBottom = p_rectRefStageScreen.getMaxY();
+
+		// "Is it" LOL?
+		final boolean isRefOnTopOrBeyond = stageRefY <= screenTop;
+		final boolean isRefOnBottomOrBeyond = stageRefBottom >= screenBottom;
+
+		double stageMyY = stageRefY + stageRefHeight;
+
+		if (isRefOnBottomOrBeyond) {
+			stageMyY = stageRefY - stageMyHeight; // Touch right of ref `Stage`, by going to its left!
+		} else if (isRefOnTopOrBeyond) {
+			stageMyY = stageRefBottom;
+		}
+
+		// "Project" to screen boundaries if the reference `Stage` is outside it:
+
+		if (stageMyY + stageMyHeight > screenBottom) {
+			stageMyY = screenBottom - stageMyHeight; // Be above ref,
+		} else if (stageMyY < screenTop) {
+			stageMyY = screenTop; // Be below ref.
+		}
+
+		return stageMyY;
+	}
+
+	public static double findSmartXDefaultToRight(
+
+			final Stage p_reference,
+			final Stage p_toPosition,
+			final Rectangle2D p_rectRefStageScreen
+
+	) {
+		// Derived from `p_reference`'s rect:
+		final double stageRefX = p_reference.getX();
+		final double stageRefWidth = p_reference.getWidth();
+
+		// `p_toPosition`'s dimensions:
+		final double stageMyWidth = p_toPosition.getWidth();
+
+		// Calculation cache:
+		final double stageRefRight = stageRefX + stageRefWidth;
+
+		final double screenLeft = p_rectRefStageScreen.getMinX();
+		final double screenRight = p_rectRefStageScreen.getMaxX();
+
+		// "Is it" LOL?
+		final boolean isRefOnLeftOrBeyond = stageRefX <= screenLeft;
+		final boolean isRefOnRightOrBeyond = stageRefRight >= screenRight;
+
+		double stageMyX = stageRefRight; // Stick to the right by default.
+
+		if (isRefOnRightOrBeyond) {
+			stageMyX = stageRefX - stageMyWidth; // Touch right of ref `Stage`, by going to its left!
+		} else if (isRefOnLeftOrBeyond) {
+			stageMyX = stageRefRight; // Touch left of ref `Stage`, by going to its right!
+		}
+
+		// "Project" to screen boundaries if the reference `Stage` is outside it:
+
+		if (stageMyX + stageMyWidth > screenRight) {
+			stageMyX = screenRight - stageMyWidth; // Keep to right edge of screen, left of ref.
+		} else if (stageMyX < screenLeft) {
+			stageMyX = screenLeft; // Keep to left edge of screen; right of ref.
+		}
+
+		return stageMyX;
+	}
+
+	public static double findSmartXDefaultToSame(
+
+			final Stage p_reference,
+			final Stage p_toPosition,
+			final Rectangle2D p_rectRefStageScreen
+
+	) {
+		// Derived from `p_reference`'s rect:
+		final double stageRefX = p_reference.getX();
+		final double stageRefWidth = p_reference.getWidth();
+
+		// `p_toPosition`'s dimensions:
+		final double stageMyWidth = p_toPosition.getWidth();
+
+		// Calculation cache:
+		final double stageRefRight = stageRefX + stageRefWidth;
+
+		final double screenLeft = p_rectRefStageScreen.getMinX();
+		final double screenRight = p_rectRefStageScreen.getMaxX();
+
+		// "Is it" LOL?
+		final boolean isRefOnLeftOrBeyond = stageRefX <= screenLeft;
+		final boolean isRefOnRightOrBeyond = stageRefRight >= screenRight;
+
+		double stageMyX = stageRefX; // Stick to the left by default.
+
+		if (isRefOnRightOrBeyond) {
+			stageMyX = stageRefX - stageMyWidth; // Touch right of ref `Stage`, by going to its left!
+		} else if (isRefOnLeftOrBeyond) {
+			stageMyX = stageRefRight; // Touch left of ref `Stage`, by going to its right!
+		}
+
+		// "Project" to screen boundaries if the reference `Stage` is outside it:
+
+		if (stageMyX + stageMyWidth > screenRight) {
+			stageMyX = screenRight - stageMyWidth; // Keep to right edge of screen, left of ref.
+		} else if (stageMyX < screenLeft) {
+			stageMyX = screenLeft; // Keep to left edge of screen; right of ref.
+		}
+
+		return stageMyX;
+	}
+
+	public static double findSmartXDefaultToLeft(
+
+			final Stage p_reference,
+			final Stage p_toPosition,
+			final Rectangle2D p_rectRefStageScreen
+
+	) {
+		// Derived from `p_reference`'s rect:
+		final double stageRefX = p_reference.getX();
+		final double stageRefWidth = p_reference.getWidth();
+
+		// `p_toPosition`'s dimensions:
+		final double stageMyWidth = p_toPosition.getWidth();
+
+		// Calculation cache:
+		final double stageRefRight = stageRefX + stageRefWidth;
+
+		final double screenLeft = p_rectRefStageScreen.getMinX();
+		final double screenRight = p_rectRefStageScreen.getMaxX();
+
+		// "Is it" LOL?
+		final boolean isRefOnLeftOrBeyond = stageRefX <= screenLeft;
+		final boolean isRefOnRightOrBeyond = stageRefRight >= screenRight;
+
+		double stageMyX = stageRefX - p_toPosition.getWidth(); // Stick to the left by default.
+
+		if (isRefOnRightOrBeyond) {
+			stageMyX = stageRefX - stageMyWidth; // Touch right of ref `Stage`, by going to its left!
+		} else if (isRefOnLeftOrBeyond) {
+			stageMyX = stageRefRight; // Touch left of ref `Stage`, by going to its right!
+		}
+
+		// "Project" to screen boundaries if the reference `Stage` is outside it:
+
+		if (stageMyX + stageMyWidth > screenRight) {
+			stageMyX = screenRight - stageMyWidth; // Keep to right edge of screen, left of ref.
+		} else if (stageMyX < screenLeft) {
+			stageMyX = screenLeft; // Keep to left edge of screen; right of ref.
+		}
+
+		return stageMyX;
+	}
+
+	public static double findSmartYDefaultToSame(
+
+			final Stage p_reference,
+			final Stage p_toPosition,
+			final Rectangle2D p_rectRefStageScreen
+
+	) {
+		// Derived from `p_reference`'s rect:
+		final double stageRefY = p_reference.getY();
+		final double stageRefHeight = p_reference.getHeight();
+
+		// `p_toPosition`'s dimensions:
+		final double stageMyHeight = p_toPosition.getHeight();
+
+		// Calculation cache:
+		final double stageRefBottom = stageRefY + stageRefHeight;
+
+		final double screenTop = p_rectRefStageScreen.getMinY();
+		final double screenBottom = p_rectRefStageScreen.getMaxY();
+
+		// "Is it" LOL?
+		final boolean isRefOnTopOrBeyond = stageRefY <= screenTop;
+		final boolean isRefOnBottomOrBeyond = stageRefBottom >= screenBottom;
+
+		double stageMyY = stageRefY;
+
+		if (isRefOnBottomOrBeyond) {
+			stageMyY = stageRefY - stageMyHeight; // Touch right of ref `Stage`, by going to its left!
+		} else if (isRefOnTopOrBeyond) {
+			stageMyY = stageRefBottom;
+		}
+
+		// "Project" to screen boundaries if the reference `Stage` is outside it:
+
+		if (stageMyY + stageMyHeight > screenBottom) {
+			stageMyY = screenBottom - stageMyHeight; // Be above ref,
+		} else if (stageMyY < screenTop) {
+			stageMyY = screenTop; // Be below ref.
+		}
+
+		return stageMyY;
+	}
+
+	public static double findSmartYDefaultToTop(
+
+			final Stage p_reference,
+			final Stage p_toPosition,
+			final Rectangle2D p_rectRefStageScreen
+
+	) {
+		// Derived from `p_reference`'s rect:
+		final double stageRefY = p_reference.getY();
+		final double stageRefHeight = p_reference.getHeight();
+
+		// `p_toPosition`'s dimensions:
+		final double stageMyHeight = p_toPosition.getHeight();
+
+		// Calculation cache:
+		final double stageRefBottom = stageRefY - stageRefHeight;
+
+		final double screenTop = p_rectRefStageScreen.getMinY();
+		final double screenBottom = p_rectRefStageScreen.getMaxY();
+
+		// "Is it" LOL?
+		final boolean isRefOnTopOrBeyond = stageRefY <= screenTop;
+		final boolean isRefOnBottomOrBeyond = stageRefBottom >= screenBottom;
+
+		double stageMyY = p_toPosition.getHeight();
+
+		if (isRefOnBottomOrBeyond) {
+			stageMyY = stageRefY - stageMyHeight; // Touch right of ref `Stage`, by going to its left!
+		} else if (isRefOnTopOrBeyond) {
+			stageMyY = stageRefBottom;
+		}
+
+		// "Project" to screen boundaries if the reference `Stage` is outside it:
+
+		if (stageMyY + stageMyHeight > screenBottom) {
+			stageMyY = screenBottom - stageMyHeight; // Be above ref,
+		} else if (stageMyY < screenTop) {
+			stageMyY = screenTop; // Be below ref.
+		}
+
+		return stageMyY;
 	}
 
 }
