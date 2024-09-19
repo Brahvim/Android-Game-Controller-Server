@@ -55,19 +55,16 @@ public final class StageProfileChooser {
 		final var localStageHome = StageHome.stage;
 		final var localStageProfiles = StageProfileChooser.stage;
 
-		StageProfileChooser.listViewOptions.requestFocus();
 		localStageProfiles.show();
+		localStageProfiles.requestFocus();
+		StageProfileChooser.listViewOptions.requestFocus();
 
 		if (localStageHome == null)
 			App.centerOnPrimaryScreen(localStageProfiles);
 		else {
 			final var rectScreenStageRef = App.getMostCoveredScreen(localStageHome).getVisualBounds();
-
-			final var nextX = App.findSmartXDefault(localStageHome, localStageProfiles, rectScreenStageRef);
-			final var nextY = App.findSmartYDefault(localStageHome, localStageProfiles, rectScreenStageRef);
-
-			localStageProfiles.setX(nextX);
-			localStageProfiles.setY(nextY);
+			localStageProfiles.setX(App.findSmartX(localStageHome, localStageProfiles, rectScreenStageRef));
+			localStageProfiles.setY(App.findSmartY(localStageHome, localStageProfiles, rectScreenStageRef));
 		}
 
 	}
