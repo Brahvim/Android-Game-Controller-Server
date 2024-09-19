@@ -63,8 +63,8 @@ public final class StageProfileChooser {
 		else {
 			final var rectScreenStageRef = App.getMostCoveredScreen(localStageHome).getVisualBounds();
 
-			final var nextX = App.findSmartXDefaultToSame(localStageHome, localStageProfiles, rectScreenStageRef);
-			final var nextY = App.findSmartYDefaultToSame(localStageHome, localStageProfiles, rectScreenStageRef);
+			final var nextX = App.findSmartXDefault(localStageHome, localStageProfiles, rectScreenStageRef);
+			final var nextY = App.findSmartYDefault(localStageHome, localStageProfiles, rectScreenStageRef);
 
 			localStageProfiles.setX(nextX);
 			localStageProfiles.setY(nextY);
