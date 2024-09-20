@@ -167,7 +167,7 @@ public final class StageHome {
 				System.out.printf("Removed clients %s.%n", selections);
 			}
 
-			case PROFILES -> StageProfileChooser.show();
+			case PROFILES -> StageProfiles.show();
 
 			case CONTROLS -> {
 				System.out.printf("Controls for clients %s now visible.%n", selections);
@@ -182,7 +182,7 @@ public final class StageHome {
 		// if (StageHome.stage == null)
 		// StageHome.init(new Stage());
 		// We start first, and are never `null`!
-		final var localStageProfiles = StageProfileChooser.stage;
+		final var localStageProfiles = StageProfiles.stage;
 		final var localStageHome = StageHome.stage;
 
 		localStageHome.show();
@@ -315,7 +315,7 @@ public final class StageHome {
 
 					StageHome.onOptionSelection(OptionsHome.STOP);
 				}
-				case F -> StageProfileChooser.show();
+				case F -> StageProfiles.show();
 				case INSERT -> StageHome.onOptionSelection(OptionsHome.ADD);
 
 			}

@@ -74,7 +74,7 @@ public class DialogTrayMenu {
 
 			case CLOSE -> App.exit(ExitCode.OKAY);
 
-			case PROFILES -> StageProfileChooser.show();
+			case PROFILES -> StageProfiles.show();
 
 		}
 	}

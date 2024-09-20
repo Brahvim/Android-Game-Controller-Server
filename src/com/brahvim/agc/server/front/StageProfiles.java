@@ -30,7 +30,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 @SuppressWarnings("unused")
-public final class StageProfileChooser {
+public final class StageProfiles {
 
 	// region Fields.
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
@@ -51,20 +51,20 @@ public final class StageProfileChooser {
 	// - Data that needs to be shared,
 	// - Data that is **optional**.
 
-	private StageProfileChooser() {
+	private StageProfiles() {
 		throw new IllegalAccessError();
 	}
 
 	public static synchronized void show() {
-		if (StageProfileChooser.stage == null)
-			StageProfileChooser.init();
+		if (StageProfiles.stage == null)
+			StageProfiles.init();
 
-		final var localStageProfiles = StageProfileChooser.stage;
+		final var localStageProfiles = StageProfiles.stage;
 		final var localStageHome = StageHome.stage;
 
 		localStageProfiles.show();
 		localStageProfiles.requestFocus();
-		StageProfileChooser.listViewOptions.requestFocus();
+		StageProfiles.listViewOptions.requestFocus();
 
 		if (localStageHome == null)
 			localStageProfiles.centerOnScreen();
@@ -73,21 +73,21 @@ public final class StageProfileChooser {
 	}
 
 	public static synchronized void close() {
-		if (StageProfileChooser.stage == null)
+		if (StageProfiles.stage == null)
 			return;
 
-		StageProfileChooser.stage.hide();
+		StageProfiles.stage.hide();
 	}
 
 	public static void showStageFocusedAndCentered() {
-		Platform.runLater(StageProfileChooser::show);
+		Platform.runLater(StageProfiles::show);
 	}
 
 	private static void onOptionSelection(final OptionsProfiles p_option) {
 		if (p_option == null)
 			return;
 
-		final var localListView = StageProfileChooser.listViewProfiles;
+		final var localListView = StageProfiles.listViewProfiles;
 		final var items = localListView.getItems();
 		final var model = localListView.getSelectionModel();
 		final var selections = model.getSelectedItems();
@@ -115,7 +115,11 @@ public final class StageProfileChooser {
 				// Controller Profile INI File", "*.ini"));
 
 				for (final Profile p : selections) {
-					final var f = chooser.showSaveDialog(StageProfileChooser.stage);
+					final var f = chooser.showSaveDialog(StageProfiles.stage);
+
+					if (f == null)
+						continue;
+
 					try {
 						Files.copy(p.getFile().toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING);
 					} catch (final IOException e) {
@@ -136,7 +140,11 @@ public final class StageProfileChooser {
 				chooser.setInitialDirectory(dirProfiles);
 				chooser.setSelectedExtensionFilter(extensionFilter);
 
-				final var results = chooser.showOpenMultipleDialog(StageProfileChooser.stage);
+				final var results = chooser.showOpenMultipleDialog(StageProfiles.stage);
+
+				if (results == null)
+					return;
+
 				System.out.printf("Files chosen: %s.%n", results.toString());
 
 				for (final var f : results) {
@@ -149,7 +157,7 @@ public final class StageProfileChooser {
 								StandardCopyOption.REPLACE_EXISTING
 
 						);
-						StageProfileChooser.listViewProfiles.getItems().add(p);
+						StageProfiles.listViewProfiles.getItems().add(p);
 					} catch (final IOException e) {
 					}
 				}
@@ -162,10 +170,10 @@ public final class StageProfileChooser {
 	}
 
 	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
-		final var localListViewOptions = StageProfileChooser.listViewOptions;
-		final var localListViewProfiles = StageProfileChooser.listViewProfiles;
-		final var localLabelListOptions = StageProfileChooser.labelListOptions;
-		final var localLabelListClients = StageProfileChooser.labelListProfiles;
+		final var localListViewOptions = StageProfiles.listViewOptions;
+		final var localListViewProfiles = StageProfiles.listViewProfiles;
+		final var localLabelListOptions = StageProfiles.labelListOptions;
+		final var localLabelListClients = StageProfiles.labelListProfiles;
 
 		localListViewOptions.setPrefWidth((localListViewOptions.getPrefWidth() / p_oldValue) * p_newValue);
 		localListViewProfiles.setPrefWidth((localListViewProfiles.getPrefWidth() / p_oldValue) * p_newValue);
@@ -174,39 +182,39 @@ public final class StageProfileChooser {
 	}
 
 	private static void onListViewsHeighten(final double p_listHeight) {
-		StageProfileChooser.listViewOptions.setPrefHeight(p_listHeight);
-		StageProfileChooser.listViewProfiles.setPrefHeight(p_listHeight);
+		StageProfiles.listViewOptions.setPrefHeight(p_listHeight);
+		StageProfiles.listViewProfiles.setPrefHeight(p_listHeight);
 	}
 
 	private static void init() {
-		final var localStage = StageProfileChooser.stage = new Stage();
+		final var localStage = StageProfiles.stage = new Stage();
 
-		final var localLabelListProfiles = StageProfileChooser.labelListProfiles = new Label(
+		final var localLabelListProfiles = StageProfiles.labelListProfiles = new Label(
 
 				App.STRINGS.getString("ListProfileChooserProfiles", "label")
 
 		);
 
-		final var localLabelListOptions = StageProfileChooser.labelListOptions = new Label(
+		final var localLabelListOptions = StageProfiles.labelListOptions = new Label(
 
 				App.STRINGS.getString("ListProfileChooserOptions", "label")
 
 		);
 
-		final var localListViewProfiles = StageProfileChooser.listViewProfiles = new ListView<>();
+		final var localListViewProfiles = StageProfiles.listViewProfiles = new ListView<>();
 
-		final var localListViewOptions = StageProfileChooser.listViewOptions = new ListView<>();
+		final var localListViewOptions = StageProfiles.listViewOptions = new ListView<>();
 
-		final var localButtonSeparator = StageProfileChooser.buttonSeparator = new Button();
+		final var localButtonSeparator = StageProfiles.buttonSeparator = new Button();
 
-		final var localRow1 = StageProfileChooser.paneRow1 = new HBox(
+		final var localRow1 = StageProfiles.paneRow1 = new HBox(
 
 				localLabelListProfiles,
 				localLabelListOptions
 
 		);
 
-		final var localRow2 = StageProfileChooser.paneRow2 = new HBox(
+		final var localRow2 = StageProfiles.paneRow2 = new HBox(
 
 				localListViewProfiles,
 				localButtonSeparator,
@@ -214,7 +222,7 @@ public final class StageProfileChooser {
 
 		);
 
-		final var localPaneRoot = StageProfileChooser.paneRoot = new VBox(
+		final var localPaneRoot = StageProfiles.paneRoot = new VBox(
 
 				localRow1,
 				localRow2
@@ -223,22 +231,22 @@ public final class StageProfileChooser {
 
 		{
 			// TODO: Look into this.
-			final double ratioStageWidth = StageProfileChooser.stage.getWidth() / 2;
+			final double ratioStageWidth = StageProfiles.stage.getWidth() / 2;
 			// localLabelListProfiles.setPrefWidth(ratioStageWidth);
 			// localLabelListOptions.setPrefWidth(ratioStageWidth);
 		}
 
-		final var localScene = StageProfileChooser.scene = new Scene(localPaneRoot);
+		final var localScene = StageProfiles.scene = new Scene(localPaneRoot);
 
-		StageProfileChooser.initStage();
-		StageProfileChooser.initRootPane();
-		StageProfileChooser.initOptionsList();
-		StageProfileChooser.initProfilesList();
-		StageProfileChooser.initSeparatorButton();
+		StageProfiles.initStage();
+		StageProfiles.initRootPane();
+		StageProfiles.initOptionsList();
+		StageProfiles.initProfilesList();
+		StageProfiles.initSeparatorButton();
 	}
 
 	private static void initStage() {
-		final var localStage = StageProfileChooser.stage;
+		final var localStage = StageProfiles.stage;
 
 		final double screenWidth = App.PRIMARY_SCREEN_WIDTH;
 		final double screenHeight = App.PRIMARY_SCREEN_HEIGHT;
@@ -256,21 +264,21 @@ public final class StageProfileChooser {
 		localStage.setMaxHeight(screenHeight);
 
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
-		localStage.setScene(StageProfileChooser.scene);
+		localStage.setScene(StageProfiles.scene);
 		localStage.setTitle(App.getWindowTitle("stageProfiles"));
 
 		localStage.widthProperty().addListener((p_property, p_oldValue, p_newValue) -> {
-			StageProfileChooser.onListViewsWiden(p_newValue.doubleValue(), p_oldValue.doubleValue());
+			StageProfiles.onListViewsWiden(p_newValue.doubleValue(), p_oldValue.doubleValue());
 		});
 
 		localStage.heightProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			final double side = p_newValue.doubleValue();
-			StageProfileChooser.onListViewsHeighten(side - (side / 12));
+			StageProfiles.onListViewsHeighten(side - (side / 12));
 		});
 	}
 
 	private static void initRootPane() {
-		final var localPaneRoot = StageProfileChooser.paneRoot;
+		final var localPaneRoot = StageProfiles.paneRoot;
 
 		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Dis CSS!
 		localPaneRoot.setOnKeyPressed(p_event -> {
@@ -282,18 +290,18 @@ public final class StageProfileChooser {
 			final boolean onlyCtrl = ctrl && !(alt || meta || shift);
 			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NO keys are active, nothing! (`0` px!)
 
-			final var model = StageProfileChooser.listViewProfiles.getSelectionModel();
+			final var model = StageProfiles.listViewProfiles.getSelectionModel();
 			final var selections = model.getSelectedItems();
 
 			switch (p_event.getCode()) {
 
 				case Q -> {
-					StageProfileChooser.onOptionSelection(OptionsProfiles.IMPORT);
+					StageProfiles.onOptionSelection(OptionsProfiles.IMPORT);
 				}
 
 				case F -> {
 					StageHome.show();
-					App.smartlyPositionSecondOfStages(StageProfileChooser.stage, StageHome.stage);
+					App.smartlyPositionSecondOfStages(StageProfiles.stage, StageHome.stage);
 				}
 
 				case INSERT -> {
@@ -309,8 +317,8 @@ public final class StageProfileChooser {
 	}
 
 	private static void initOptionsList() {
-		final var localListView = StageProfileChooser.listViewOptions;
-		final var localLabelOptionsList = StageProfileChooser.labelListOptions;
+		final var localListView = StageProfiles.listViewOptions;
+		final var localLabelOptionsList = StageProfiles.labelListOptions;
 
 		localListView.requestFocus();
 		localListView.getItems().addAll(OptionsProfiles.ORDER_UI);
@@ -319,17 +327,17 @@ public final class StageProfileChooser {
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;"); // NOSONAR! CSS!...
 
 		localListView.setOnKeyPressed(p_event -> {
-			final var clientSelections = StageProfileChooser.listViewProfiles.getSelectionModel();
-			final var optionSelections = StageProfileChooser.listViewOptions.getSelectionModel();
+			final var clientSelections = StageProfiles.listViewProfiles.getSelectionModel();
+			final var optionSelections = StageProfiles.listViewOptions.getSelectionModel();
 
 			final var selectedItems = clientSelections.getSelectedItems();
 			final var selectedOption = optionSelections.getSelectedItem();
 
 			switch (p_event.getCode()) {
 
-				case ENTER, SPACE -> StageProfileChooser.onOptionSelection(selectedOption);
+				case ENTER, SPACE -> StageProfiles.onOptionSelection(selectedOption);
 
-				case ESCAPE -> StageProfileChooser.close();
+				case ESCAPE -> StageProfiles.close();
 
 				default -> {
 					// No defaults!
@@ -352,8 +360,8 @@ public final class StageProfileChooser {
 
 					if (p_option != null /* && !p_isEmpty */) {
 						super.setOnMouseClicked(p_event -> {
-							final var clientSelections = StageProfileChooser.listViewProfiles.getSelectionModel();
-							final var optionSelections = StageProfileChooser.listViewOptions.getSelectionModel();
+							final var clientSelections = StageProfiles.listViewProfiles.getSelectionModel();
+							final var optionSelections = StageProfiles.listViewOptions.getSelectionModel();
 
 							final var selectedItems = clientSelections.getSelectedItems();
 							final var selectedOption = optionSelections.getSelectedItem();
@@ -363,7 +371,7 @@ public final class StageProfileChooser {
 
 							switch (p_event.getButton()) {
 
-								case PRIMARY -> StageProfileChooser.onOptionSelection(selectedOption);
+								case PRIMARY -> StageProfiles.onOptionSelection(selectedOption);
 
 								default -> {
 									// No defaults!
@@ -409,8 +417,8 @@ public final class StageProfileChooser {
 
 	@SuppressWarnings("unchecked")
 	private static void initProfilesList() {
-		final var localListView = StageProfileChooser.listViewProfiles;
-		final var localLabelProfilesList = StageProfileChooser.labelListProfiles;
+		final var localListView = StageProfiles.listViewProfiles;
+		final var localLabelProfilesList = StageProfiles.labelListProfiles;
 
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localLabelProfilesList.setStyle("-fx-text-fill: gray;"); // NOSONAR! Can't! It's CSS!
@@ -455,7 +463,7 @@ public final class StageProfileChooser {
 				}
 			}
 
-			final var localListViewOptions = StageProfileChooser.listViewOptions;
+			final var localListViewOptions = StageProfiles.listViewOptions;
 			final var model = localListViewOptions.getSelectionModel();
 
 			// This one matters when the profiles list is empty:
@@ -473,7 +481,7 @@ public final class StageProfileChooser {
 					localListViewOptions.requestFocus();
 				}
 
-				case ESCAPE -> StageProfileChooser.close();
+				case ESCAPE -> StageProfiles.close();
 
 				case DOWN -> {
 					localListViewOptions.requestFocus();
@@ -602,9 +610,9 @@ public final class StageProfileChooser {
 	}
 
 	private static void initSeparatorButton() {
-		final var localLabelProfiles = StageProfileChooser.labelListProfiles;
-		final var localButtonSeparator = StageProfileChooser.buttonSeparator;
-		final var localListViewProfiles = StageProfileChooser.listViewProfiles;
+		final var localLabelProfiles = StageProfiles.labelListProfiles;
+		final var localButtonSeparator = StageProfiles.buttonSeparator;
+		final var localListViewProfiles = StageProfiles.listViewProfiles;
 
 		localButtonSeparator.setFocusTraversable(false);
 		localButtonSeparator.setCursor(Cursor.OPEN_HAND);
