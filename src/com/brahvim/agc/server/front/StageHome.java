@@ -34,24 +34,23 @@ public final class StageHome {
 
 	// region Fields.
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
-	static Stage stage = null; // NOSONAR!
-
-	private static Scene scene = null; // NOSONAR!
-	private static Pane paneRoot = null; // NOSONAR!
-	private static HBox paneRow1 = null; // NOSONAR!
-	private static HBox paneRow2 = null; // NOSONAR!
-	private static Button buttonSeparator = null; // NOSONAR!
-	private static Label labelListClients = null; // NOSONAR!
-	private static Label labelListOptions = null; // NOSONAR!
-	private static ListView<Client> listViewClients = null; // NOSONAR!
-	private static ListView<OptionsHome> listViewOptions = null; // NOSONAR!
+	static Stage stage; // NOSONAR!
+	static Scene scene; // NOSONAR!
+	static Pane paneRoot; // NOSONAR!
+	static HBox paneRow1; // NOSONAR!
+	static HBox paneRow2; // NOSONAR!
+	static Button buttonSeparator; // NOSONAR!
+	static Label labelListClients; // NOSONAR!
+	static Label labelListOptions; // NOSONAR!
+	static ListView<Client> listViewClients; // NOSONAR!
+	static ListView<OptionsHome> listViewOptions; // NOSONAR!
 	// endregion
 
 	private StageHome() {
 		throw new IllegalAccessError();
 	}
 
-	// region Static methods.
+	// region Callback methods.
 	public static void showStageFocusedAndCentered() {
 		Platform.runLater(() -> {
 			StageHome.stage.show();
@@ -98,7 +97,6 @@ public final class StageHome {
 	}
 
 	// region If I'm not submitting this to an API, `on*()`. Else `cbck*()`.
-
 	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
 		final var localListViewClients = StageHome.listViewClients;
 		final var localListViewOptions = StageHome.listViewOptions;
@@ -177,19 +175,27 @@ public final class StageHome {
 
 		}
 	}
-
 	// endregion
 	// endregion
 
-	public static void show() {
-		if (StageHome.stage == null)
-			StageHome.init(new Stage());
+	public static synchronized void show() {
+		// if (StageHome.stage == null)
+		// StageHome.init(new Stage());
+		// We start first, and are never `null`!
+		final var localStageProfiles = StageProfileChooser.stage;
+		final var localStageHome = StageHome.stage;
 
-		StageHome.stage.show();
-		StageHome.stage.requestFocus();
+		localStageHome.show();
+		localStageHome.requestFocus();
+		StageHome.listViewOptions.requestFocus();
+
+		if (localStageProfiles == null)
+			localStageHome.centerOnScreen();
+		else
+			App.smartlyPositionSecondOfStages(localStageProfiles, localStageHome);
 	}
 
-	public static void close() {
+	public static synchronized void close() {
 		StageHome.stage.close();
 	}
 
@@ -254,7 +260,7 @@ public final class StageHome {
 		final var height = App.PRIMARY_SCREEN_HEIGHT / 4;
 
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
-		localStage.setTitle(App.STRINGS.getString("StageTitles", "home"));
+		localStage.setTitle(App.getWindowTitle("stageHome"));
 
 		localStage.setWidth(width);
 		localStage.setHeight(height);
@@ -309,7 +315,7 @@ public final class StageHome {
 
 					StageHome.onOptionSelection(OptionsHome.STOP);
 				}
-				case P -> StageProfileChooser.show();
+				case F -> StageProfileChooser.show();
 				case INSERT -> StageHome.onOptionSelection(OptionsHome.ADD);
 
 			}
@@ -571,7 +577,7 @@ public final class StageHome {
 					StageHome.onOptionSelection(selectedOption);
 
 				default -> {
-					return;
+					// No defaults!
 				}
 
 			}

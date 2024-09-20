@@ -5,7 +5,6 @@ import java.awt.event.MouseEvent;
 import com.brahvim.agc.server.ExitCode;
 
 import javafx.animation.FadeTransition;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.event.EventHandler;
 import javafx.scene.Cursor;
@@ -64,16 +63,6 @@ public class DialogTrayMenu {
 		fadeOut.play();
 	}
 
-	public static void onListViewItemSelected(
-
-			final ObservableValue<OptionsTray> p_property, // NOSONAR, I need this for a callback...
-			final OptionsTray p_oldValue,
-			final OptionsTray p_newValue
-
-	) {
-		DialogTrayMenu.onListViewItemSelected(p_newValue);
-	}
-
 	public static void onListViewItemSelected(final OptionsTray p_item) {
 		switch (p_item) {
 
@@ -81,11 +70,11 @@ public class DialogTrayMenu {
 				// No defaults!
 			}
 
+			case HOME -> StageHome.show();
+
 			case CLOSE -> App.exit(ExitCode.OKAY);
 
-			case HOME -> StageHome.showStageFocusedAndCentered();
-
-			case PROFILES -> StageProfileChooser.showStageFocusedAndCentered();
+			case PROFILES -> StageProfileChooser.show();
 
 		}
 	}
@@ -97,8 +86,8 @@ public class DialogTrayMenu {
 		DialogTrayMenu.dialog = new Dialog<>();
 
 		final var localDialog = DialogTrayMenu.dialog;
-		final var paneRoot = localDialog.getDialogPane();
-		final var stage = (Stage) paneRoot.getScene().getWindow(); // `Stage` in `HeavyweightDialog`.
+		final var paneDialog = localDialog.getDialogPane();
+		final var stage = (Stage) paneDialog.getScene().getWindow(); // `Stage` in `HeavyweightDialog`.
 		final var listViewItems = FXCollections.observableArrayList(OptionsTray.ORDER_UI);
 
 		final EventHandler<? super KeyEvent> cbckKeyPressExitOnEsc = p_event -> {
@@ -121,9 +110,9 @@ public class DialogTrayMenu {
 			DialogTrayMenu.close();
 		};
 
-		localDialog.initStyle(StageStyle.TRANSPARENT);
+		localDialog.initStyle(StageStyle.UNDECORATED);
 		localDialog.initModality(Modality.APPLICATION_MODAL);
-		localDialog.setTitle(App.STRINGS.getString("StageTitles", "tray"));
+		localDialog.setTitle(App.getWindowTitle("dialogTray"));
 
 		stage.setWidth(400);
 		stage.setHeight(150);
@@ -137,9 +126,9 @@ public class DialogTrayMenu {
 			DialogTrayMenu.close();
 		});
 
-		paneRoot.getButtonTypes().clear();
-		paneRoot.setOnKeyPressed(cbckKeyPressExitOnEsc);
-		paneRoot.setStyle("-fx-background-color: black;");
+		paneDialog.getButtonTypes().clear();
+		paneDialog.setOnKeyPressed(cbckKeyPressExitOnEsc);
+		paneDialog.setStyle("-fx-background-color: black;");
 		// paneRoot.setOnMouseExited(p_event -> DialogTrayMenu.close());
 
 		final var listView = new ListView<OptionsTray>(listViewItems);
@@ -218,7 +207,7 @@ public class DialogTrayMenu {
 		listViewSelectionModel.selectedItemProperty()
 				.addListener((p_property, p_oldValue, p_newValue) -> DialogTrayMenu.onListViewItemSelected(p_newValue));
 
-		paneRoot.setContent(listView);
+		paneDialog.setContent(listView);
 
 		localDialog.show();
 		localDialog.setX(p_eventMouseAwt.getXOnScreen());

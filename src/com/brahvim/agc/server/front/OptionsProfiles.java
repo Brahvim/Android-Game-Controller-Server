@@ -4,7 +4,8 @@ import java.util.IdentityHashMap;
 
 public enum OptionsProfiles {
 
-	ADD(),
+	CREATE(),
+	HOME(),
 	REMOVE(),
 	IMPORT(),
 	EXPORT(),
@@ -17,10 +18,11 @@ public enum OptionsProfiles {
 
 	public static final OptionsProfiles[] ORDER_UI = new OptionsProfiles[] { // NOSONAR! Speed!
 
-			ADD,
+			CREATE,
 			REMOVE,
 			EXPORT,
 			IMPORT,
+			HOME,
 
 	};
 

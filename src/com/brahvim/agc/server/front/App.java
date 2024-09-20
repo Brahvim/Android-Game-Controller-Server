@@ -1,10 +1,12 @@
 package com.brahvim.agc.server.front;
 
 import java.awt.EventQueue;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 
 import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.StringTable;
@@ -30,16 +32,17 @@ public class App extends Application {
 
 	// region Fields.
 	public static final Font FONT_LARGE = new Font(18);
+	private static final Locale LOCALE = Locale.getDefault(); // Order matters!
 	public static final Image AGC_ICON_IMAGE = App.loadAgcIcon();
 	public static final Screen PRIMARY_SCREEN = Screen.getPrimary();
 	public static final Object JAVAFX_APP_THREAD_LOCK = new Object();
-	public static final ArrayList<Client> LIST_CLIENTS_WAITING = new ArrayList<>();
+	public static final String LANGUAGE = App.LOCALE.getLanguage(); // Order matters!
+	public static final StringTable STRINGS = App.findStringTable(); // Order matters!
+	public static final ArrayList<Client> LIST_CLIENTS_WAITING = new ArrayList<>(); // NOSONAR!
 	public static final boolean ON_MULTI_MONITOR_SETUP = Screen.getScreens().size() > 1;
 	public static final Rectangle2D PRIMARY_SCREEN_RECT = App.PRIMARY_SCREEN.getBounds();
 	public static final double PRIMARY_SCREEN_WIDTH = App.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = App.PRIMARY_SCREEN_RECT.getHeight();
-	public static final StringTable STRINGS = StringTable.tryCreating("./res/strings/AgcStringTable.ini");
-
 	public static final StageSmartResizeFunction SMARTLY_POSITION_STAGE_X = App.ON_MULTI_MONITOR_SETUP
 			? StageSmartResizeFunction::implMultiX
 			: StageSmartResizeFunction::implSingleX;
@@ -47,10 +50,14 @@ public class App extends Application {
 	public static final StageSmartResizeFunction SMARTLY_POSITION_STAGE_Y = App.ON_MULTI_MONITOR_SETUP
 			? StageSmartResizeFunction::implMultiY
 			: StageSmartResizeFunction::implSingleY;
-
 	// endregion
 
 	// region Static methods.
+	public static void smartlyPositionSecondOfStages(final Stage p_reference, final Stage p_toPosition) {
+		p_toPosition.setX(App.SMARTLY_POSITION_STAGE_X.find(p_reference, p_toPosition));
+		p_toPosition.setY(App.SMARTLY_POSITION_STAGE_Y.find(p_reference, p_toPosition));
+	}
+
 	public static void ensureArrayListSize(final ArrayList<?> p_list, final Integer p_minSize) {
 		// `Collection::addAll()`? Well, no!
 		// Putting my own `Collection` subclass didn't exactly work out, and `List.of()`
@@ -220,13 +227,42 @@ public class App extends Application {
 		EventQueue.invokeLater(AgcTrayIcon::getTrayIcon); // `SwingUtilities.invokeLater()` throws up :/
 	}
 
-	public static void smartlyPositionSecondOfStages(final Stage p_reference, final Stage p_toPosition) {
-		p_toPosition.setX(App.SMARTLY_POSITION_STAGE_X.find(p_reference, p_toPosition));
-		p_toPosition.setY(App.SMARTLY_POSITION_STAGE_Y.find(p_reference, p_toPosition));
+	public static String getWindowTitle(final String p_property) {
+		return App.STRINGS.getString("WindowTitles", p_property);
+	}
+
+	public static StringTable findStringTable() {
+		final var strLang = App.LANGUAGE;
+		final var filesStringsDir = new File("./res/strings/").listFiles();
+		final var dirsStringsDir = new File[filesStringsDir.length];
+		int numDirsFiltered = 0;
+
+		for (final var d : filesStringsDir) {
+			if (!d.isDirectory())
+				continue;
+
+			dirsStringsDir[numDirsFiltered] = d;
+			numDirsFiltered++;
+		}
+
+		for (int i = 0; i < dirsStringsDir.length; ++i) {
+			final var d = dirsStringsDir[i];
+
+			if (strLang.equals(d.getName())) {
+				return StringTable.tryCreating(String.format(
+
+						"./res/strings/%s/agc-string-table.ini",
+						strLang
+
+				));
+			}
+		}
+
+		return StringTable.tryCreating("./res/strings/en/agc-string-table.ini");
 	}
 
 	private static Image loadAgcIcon() {
-		try (final FileInputStream fis = new FileInputStream("./res/images/icon-192.png")) {
+		try (final FileInputStream fis = new FileInputStream("./res/images/agc-icon-192.png")) {
 			return new Image(fis);
 		} catch (final IOException e) {
 			System.err.println("Icon image not found. It will now be grey.");
@@ -251,6 +287,7 @@ public class App extends Application {
 			return toRet;
 		}
 	}
+	// endregion
 
 	@Override
 	public void start(final Stage p_stage) {

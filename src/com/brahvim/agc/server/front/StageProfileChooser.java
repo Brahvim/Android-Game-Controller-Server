@@ -1,8 +1,14 @@
 package com.brahvim.agc.server.front;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import com.brahvim.agc.server.back.Profile;
 
 import javafx.application.Platform;
 import javafx.event.EventHandler;
@@ -18,6 +24,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -27,16 +35,15 @@ public final class StageProfileChooser {
 	// region Fields.
 	// NOSONAR, these *are to be used* **anywhere** in this class!:
 	static Stage stage; // NOSONAR!
-
-	private static Scene scene; // NOSONAR!
-	private static Pane paneRoot; // NOSONAR!
-	private static Pane paneRow1; // NOSONAR!
-	private static Pane paneRow2; // NOSONAR!
-	private static Button buttonSeparator; // NOSONAR!
-	private static Label labelListOptions; // NOSONAR!
-	private static Label labelListProfiles; // NOSONAR!
-	private static ListView<String> listViewProfiles; // NOSONAR!
-	private static ListView<OptionsProfiles> listViewOptions; // NOSONAR!
+	static Scene scene; // NOSONAR!
+	static Pane paneRoot; // NOSONAR!
+	static Pane paneRow1; // NOSONAR!
+	static Pane paneRow2; // NOSONAR!
+	static Button buttonSeparator; // NOSONAR!
+	static Label labelListOptions; // NOSONAR!
+	static Label labelListProfiles; // NOSONAR!
+	static ListView<Profile> listViewProfiles; // NOSONAR!
+	static ListView<OptionsProfiles> listViewOptions; // NOSONAR!
 	// endregion
 
 	// Will do this for two types of data:
@@ -52,20 +59,17 @@ public final class StageProfileChooser {
 		if (StageProfileChooser.stage == null)
 			StageProfileChooser.init();
 
-		final var localStageHome = StageHome.stage;
 		final var localStageProfiles = StageProfileChooser.stage;
+		final var localStageHome = StageHome.stage;
 
 		localStageProfiles.show();
 		localStageProfiles.requestFocus();
 		StageProfileChooser.listViewOptions.requestFocus();
 
 		if (localStageHome == null)
-			App.centerOnPrimaryScreen(localStageProfiles);
-		else {
-			localStageProfiles.setX(App.SMARTLY_POSITION_STAGE_X.find(localStageHome, localStageProfiles));
-			localStageProfiles.setY(App.SMARTLY_POSITION_STAGE_Y.find(localStageHome, localStageProfiles));
-		}
-
+			localStageProfiles.centerOnScreen();
+		else
+			App.smartlyPositionSecondOfStages(localStageHome, localStageProfiles);
 	}
 
 	public static synchronized void close() {
@@ -77,6 +81,84 @@ public final class StageProfileChooser {
 
 	public static void showStageFocusedAndCentered() {
 		Platform.runLater(StageProfileChooser::show);
+	}
+
+	private static void onOptionSelection(final OptionsProfiles p_option) {
+		if (p_option == null)
+			return;
+
+		final var localListView = StageProfileChooser.listViewProfiles;
+		final var items = localListView.getItems();
+		final var model = localListView.getSelectionModel();
+		final var selections = model.getSelectedItems();
+
+		switch (p_option) {
+
+			default -> {
+				// No defaults!
+			}
+
+			case HOME -> StageHome.show();
+
+			case CREATE -> {
+			}
+
+			case EXPORT -> {
+				final var chooser = new FileChooser();
+				final var strTitle = App.getWindowTitle("fileChooserProfileExporter");
+
+				chooser.setTitle(strTitle);
+
+				// chooser.setInitialDirectory(new File(System.getProperty("user.home")));
+
+				// chooser.setSelectedExtensionFilter(new ExtensionFilter("Android Game
+				// Controller Profile INI File", "*.ini"));
+
+				for (final Profile p : selections) {
+					final var f = chooser.showSaveDialog(StageProfileChooser.stage);
+					try {
+						Files.copy(p.getFile().toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+					} catch (final IOException e) {
+						System.out.printf("Failure in exporting `%s`.%n", p.getName());
+					}
+				}
+
+				System.out.printf("Files exported as: %s.%n", selections.toString());
+			}
+
+			case IMPORT -> {
+				final var chooser = new FileChooser();
+				final var dirProfiles = new File("./res/profiles/");
+				final var strTitle = App.getWindowTitle("fileChooserProfileImporter");
+				final var extensionFilter = new ExtensionFilter("Android Game Controller Profile INI File", "*.ini");
+
+				chooser.setTitle(strTitle);
+				chooser.setInitialDirectory(dirProfiles);
+				chooser.setSelectedExtensionFilter(extensionFilter);
+
+				final var results = chooser.showOpenMultipleDialog(StageProfileChooser.stage);
+				System.out.printf("Files chosen: %s.%n", results.toString());
+
+				for (final var f : results) {
+					try {
+						final var p = new Profile(f);
+						Files.copy(
+
+								f.toPath(),
+								new File(dirProfiles, f.getName()).toPath(),
+								StandardCopyOption.REPLACE_EXISTING
+
+						);
+						StageProfileChooser.listViewProfiles.getItems().add(p);
+					} catch (final IOException e) {
+					}
+				}
+			}
+
+			case REMOVE -> {
+			}
+
+		}
 	}
 
 	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
@@ -175,7 +257,7 @@ public final class StageProfileChooser {
 
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
 		localStage.setScene(StageProfileChooser.scene);
-		localStage.setTitle(App.STRINGS.getString("StageTitles", "profiles"));
+		localStage.setTitle(App.getWindowTitle("stageProfiles"));
 
 		localStage.widthProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			StageProfileChooser.onListViewsWiden(p_newValue.doubleValue(), p_oldValue.doubleValue());
@@ -192,6 +274,13 @@ public final class StageProfileChooser {
 
 		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Dis CSS!
 		localPaneRoot.setOnKeyPressed(p_event -> {
+			final boolean alt = p_event.isAltDown();
+			final boolean meta = p_event.isMetaDown();
+			final boolean shift = p_event.isShiftDown();
+			final boolean ctrl = p_event.isControlDown();
+
+			final boolean onlyCtrl = ctrl && !(alt || meta || shift);
+			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NO keys are active, nothing! (`0` px!)
 
 			final var model = StageProfileChooser.listViewProfiles.getSelectionModel();
 			final var selections = model.getSelectedItems();
@@ -199,7 +288,12 @@ public final class StageProfileChooser {
 			switch (p_event.getCode()) {
 
 				case Q -> {
-					System.out.println("Import dialog is up.");
+					StageProfileChooser.onOptionSelection(OptionsProfiles.IMPORT);
+				}
+
+				case F -> {
+					StageHome.show();
+					App.smartlyPositionSecondOfStages(StageProfileChooser.stage, StageHome.stage);
 				}
 
 				case INSERT -> {
@@ -225,23 +319,20 @@ public final class StageProfileChooser {
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;"); // NOSONAR! CSS!...
 
 		localListView.setOnKeyPressed(p_event -> {
-			// final var clientSelections =
-			// StageProfileChooser.listViewProfiles.getSelectionModel();
-			// final var optionSelections =
-			// StageProfileChooser.listViewOptions.getSelectionModel();
+			final var clientSelections = StageProfileChooser.listViewProfiles.getSelectionModel();
+			final var optionSelections = StageProfileChooser.listViewOptions.getSelectionModel();
 
-			// final var selectedItems = clientSelections.getSelectedItems();
-			// final var selectedOption = optionSelections.getSelectedItem();
+			final var selectedItems = clientSelections.getSelectedItems();
+			final var selectedOption = optionSelections.getSelectedItem();
 
 			switch (p_event.getCode()) {
 
-				// case ENTER, SPACE ->
-				// StageHome.onOptionSelection(selectedOption);
+				case ENTER, SPACE -> StageProfileChooser.onOptionSelection(selectedOption);
 
 				case ESCAPE -> StageProfileChooser.close();
 
 				default -> {
-					return;
+					// No defaults!
 				}
 
 			}
@@ -261,21 +352,18 @@ public final class StageProfileChooser {
 
 					if (p_option != null /* && !p_isEmpty */) {
 						super.setOnMouseClicked(p_event -> {
-							// final var clientSelections =
-							// StageProfileChooser.listViewProfiles.getSelectionModel();
-							// final var optionSelections =
-							// StageProfileChooser.listViewOptions.getSelectionModel();
+							final var clientSelections = StageProfileChooser.listViewProfiles.getSelectionModel();
+							final var optionSelections = StageProfileChooser.listViewOptions.getSelectionModel();
 
-							// final var selectedItems = clientSelections.getSelectedItems();
-							// final var selectedOption = optionSelections.getSelectedItem();
+							final var selectedItems = clientSelections.getSelectedItems();
+							final var selectedOption = optionSelections.getSelectedItem();
 
-							//
 							// if (p_event.getPickResult().getIntersectedNode() != this)
 							// return;
 
 							switch (p_event.getButton()) {
 
-								// case PRIMARY -> StageHome.onOptionSelection(selectedOption);
+								case PRIMARY -> StageProfileChooser.onOptionSelection(selectedOption);
 
 								default -> {
 									// No defaults!
@@ -329,7 +417,7 @@ public final class StageProfileChooser {
 
 		// Used to track dragging:
 		final var startId = new AtomicInteger(-1); // Also used for drag **status** - not just the first index!
-		final var startCell = new AtomicReference<ListCell<String>>();
+		final var startCell = new AtomicReference<ListCell<Profile>>();
 
 		final var localListViewSelectionModel = localListView.getSelectionModel();
 
@@ -405,7 +493,7 @@ public final class StageProfileChooser {
 
 		});
 		localListView.setCellFactory(p_listView -> {
-			final var toRet = new ListCell<String>() {
+			final var toRet = new ListCell<Profile>() {
 
 				// Default implementation in `ListCell`:
 
@@ -422,7 +510,7 @@ public final class StageProfileChooser {
 				 */
 
 				@Override
-				protected void updateItem(final String p_profile, final boolean p_isEmpty) {
+				protected void updateItem(final Profile p_profile, final boolean p_isEmpty) {
 					super.updateItem(p_profile, p_isEmpty);
 
 					if (p_isEmpty)
@@ -440,8 +528,8 @@ public final class StageProfileChooser {
 						return;
 					}
 
-					super.setText(p_profile);
 					super.setCursor(Cursor.CROSSHAIR);
+					super.setText(p_profile.getName());
 				}
 
 			};
