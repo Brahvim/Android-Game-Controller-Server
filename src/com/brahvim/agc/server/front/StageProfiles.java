@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.back.Profile;
 
 import javafx.application.Platform;
@@ -98,7 +99,9 @@ public final class StageProfiles {
 				// No defaults!
 			}
 
-			case HOME -> StageHome.show();
+			case HOME -> {
+				StageHome.show();
+			}
 
 			case CREATE -> {
 			}
@@ -159,6 +162,7 @@ public final class StageProfiles {
 						);
 						StageProfiles.listViewProfiles.getItems().add(p);
 					} catch (final IOException e) {
+						e.printStackTrace();
 					}
 				}
 			}
@@ -282,6 +286,8 @@ public final class StageProfiles {
 
 		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Dis CSS!
 		localPaneRoot.setOnKeyPressed(p_event -> {
+			final var key = p_event.getCode();
+
 			final boolean alt = p_event.isAltDown();
 			final boolean meta = p_event.isMetaDown();
 			final boolean shift = p_event.isShiftDown();
@@ -293,15 +299,10 @@ public final class StageProfiles {
 			final var model = StageProfiles.listViewProfiles.getSelectionModel();
 			final var selections = model.getSelectedItems();
 
-			switch (p_event.getCode()) {
+			switch (key) {
 
-				case Q -> {
-					StageProfiles.onOptionSelection(OptionsProfiles.IMPORT);
-				}
-
-				case F -> {
-					StageHome.show();
-					App.smartlyPositionSecondOfStages(StageProfiles.stage, StageHome.stage);
+				case ESCAPE -> {
+					StageProfiles.close();
 				}
 
 				case INSERT -> {
@@ -310,6 +311,23 @@ public final class StageProfiles {
 
 				default -> {
 					// No defaults!
+				}
+
+				case F -> {
+					StageHome.show();
+					App.smartlyPositionSecondOfStages(StageProfiles.stage, StageHome.stage);
+				}
+
+				case Q -> {
+					if (onlyCtrl)
+						App.exit(ExitCode.OKAY);
+
+					StageProfiles.onOptionSelection(OptionsProfiles.IMPORT);
+				}
+
+				case W -> {
+					if (onlyCtrl)
+						StageProfiles.close();
 				}
 
 			}
@@ -327,20 +345,41 @@ public final class StageProfiles {
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;"); // NOSONAR! CSS!...
 
 		localListView.setOnKeyPressed(p_event -> {
+			final var key = p_event.getCode();
+
+			final boolean alt = p_event.isAltDown();
+			final boolean meta = p_event.isMetaDown();
+			final boolean shift = p_event.isShiftDown();
+			final boolean ctrl = p_event.isControlDown();
+
+			final boolean onlyCtrl = ctrl && !(shift && alt || meta);
+			final boolean onlyShift = shift && !(ctrl || alt || meta);
+			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
+
 			final var clientSelections = StageProfiles.listViewProfiles.getSelectionModel();
 			final var optionSelections = StageProfiles.listViewOptions.getSelectionModel();
 
 			final var selectedItems = clientSelections.getSelectedItems();
 			final var selectedOption = optionSelections.getSelectedItem();
 
-			switch (p_event.getCode()) {
+			switch (key) {
 
 				case ENTER, SPACE -> StageProfiles.onOptionSelection(selectedOption);
 
-				case ESCAPE -> StageProfiles.close();
-
+				case ESCAPE -> {
+					StageProfiles.close();
+				}
 				default -> {
 					// No defaults!
+				}
+				case Q -> {
+					if (onlyCtrl)
+						App.exit(ExitCode.OKAY);
+				}
+
+				case W -> {
+					if (onlyCtrl)
+						StageProfiles.close();
 				}
 
 			}
@@ -435,22 +474,42 @@ public final class StageProfiles {
 
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localListView.setOnKeyPressed(p_event -> {
-			final var code = p_event.getCode();
+			final var key = p_event.getCode();
 
-			// final boolean alt = p_event.isAltDown();
-			// final boolean meta = p_event.isMetaDown();
-			// final boolean shift = p_event.isShiftDown();
-			// final boolean ctrl = p_event.isControlDown();
+			final boolean alt = p_event.isAltDown();
+			final boolean meta = p_event.isMetaDown();
+			final boolean shift = p_event.isShiftDown();
+			final boolean ctrl = p_event.isControlDown();
 
-			// final boolean onlyCtrl = ctrl && !(shift && alt || meta);
-			// final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
+			final boolean onlyCtrl = ctrl && !(shift && alt || meta);
+			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
+
+			switch (key) {
+
+				case ESCAPE -> {
+					StageProfiles.close();
+				}
+				default -> {
+					// No defaults!
+				}
+				case Q -> {
+					if (onlyCtrl)
+						App.exit(ExitCode.OKAY);
+				}
+
+				case W -> {
+					if (onlyCtrl)
+						StageProfiles.close();
+				}
+
+			}
 
 			// System.out.println("Key pressed with list-view in focus!");
 
 			final boolean isListEmpty = localListView.getItems().isEmpty();
 
 			if (!isListEmpty) {
-				switch (code) {
+				switch (key) {
 
 					default -> {
 						// No defaults!
@@ -467,7 +526,7 @@ public final class StageProfiles {
 			final var model = localListViewOptions.getSelectionModel();
 
 			// This one matters when the profiles list is empty:
-			switch (code) {
+			switch (key) {
 
 				case END, PAGE_DOWN -> {
 					final var items = localListViewOptions.getItems();
@@ -480,8 +539,6 @@ public final class StageProfiles {
 					model.clearAndSelect(0);
 					localListViewOptions.requestFocus();
 				}
-
-				case ESCAPE -> StageProfiles.close();
 
 				case DOWN -> {
 					localListViewOptions.requestFocus();

@@ -4,11 +4,11 @@ import java.util.IdentityHashMap;
 
 public enum OptionsProfiles {
 
-	CREATE(),
 	HOME(),
-	REMOVE(),
-	IMPORT(),
+	CREATE(),
 	EXPORT(),
+	IMPORT(),
+	REMOVE(),
 
 	/* */ ;
 

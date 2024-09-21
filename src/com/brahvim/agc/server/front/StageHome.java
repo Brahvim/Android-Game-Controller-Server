@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.brahvim.agc.server.ExitCode;
 import com.brahvim.agc.server.back.Backend;
 import com.brahvim.agc.server.back.Client;
 import com.brahvim.agc.server.back.EventAwaitOneClient;
@@ -18,7 +19,6 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
@@ -60,6 +60,7 @@ public final class StageHome {
 	}
 
 	private static void cbckKeyPressedForUndo(final KeyEvent p_event) {
+		final var key = p_event.getCode();
 		final boolean alt = p_event.isAltDown();
 		final boolean meta = p_event.isMetaDown();
 		final boolean shift = p_event.isShiftDown();
@@ -67,9 +68,9 @@ public final class StageHome {
 
 		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
 		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NO keys are active, nothing! (`0` px!)
-		// FIXME: If typing bugs, check *this out!:*
+		// FIXME: If typing is buggy, check *this out!:*
 
-		switch (p_event.getCode()) {
+		switch (key) {
 
 			default -> {
 				// No defaults!
@@ -167,7 +168,9 @@ public final class StageHome {
 				System.out.printf("Removed clients %s.%n", selections);
 			}
 
-			case PROFILES -> StageProfiles.show();
+			case PROFILES -> {
+				StageProfiles.show();
+			}
 
 			case CONTROLS -> {
 				System.out.printf("Controls for clients %s now visible.%n", selections);
@@ -286,7 +289,7 @@ public final class StageHome {
 		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Repeated 9 times, but it's CSS!
 
 		App.prependEventHandler(localPaneRoot.onKeyPressedProperty(), p_event -> {
-			final KeyCode key = p_event.getCode();
+			final var key = p_event.getCode();
 			final boolean alt = p_event.isAltDown();
 			final boolean meta = p_event.isMetaDown();
 			final boolean shift = p_event.isShiftDown();
@@ -300,6 +303,9 @@ public final class StageHome {
 			// All operations:
 			switch (key) {
 
+				case F -> {
+					StageProfiles.show();
+				}
 				default -> {
 					// No defaults!
 				}
@@ -315,8 +321,10 @@ public final class StageHome {
 
 					StageHome.onOptionSelection(OptionsHome.STOP);
 				}
-				case F -> StageProfiles.show();
-				case INSERT -> StageHome.onOptionSelection(OptionsHome.ADD);
+
+				case INSERT -> {
+					StageHome.onOptionSelection(OptionsHome.ADD);
+				}
 
 			}
 
@@ -372,11 +380,12 @@ public final class StageHome {
 
 		final var localListViewSelectionModel = localListView.getSelectionModel();
 		final var localListViewSelections = localListViewSelectionModel.getSelectedItems();
+
 		localListViewSelectionModel.setSelectionMode(SelectionMode.MULTIPLE);
 
 		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localListView.setOnKeyPressed(p_event -> {
-			final var code = p_event.getCode();
+			final var key = p_event.getCode();
 
 			final boolean alt = p_event.isAltDown();
 			final boolean meta = p_event.isMetaDown();
@@ -391,8 +400,28 @@ public final class StageHome {
 
 			final boolean isListEmpty = localListView.getItems().isEmpty();
 
+			switch (key) {
+
+				case ESCAPE -> {
+					StageHome.close();
+				}
+				default -> {
+					// No defaults!
+				}
+				case Q -> {
+					if (onlyCtrl)
+						App.exit(ExitCode.OKAY);
+				}
+
+				case W -> {
+					if (onlyCtrl)
+						StageHome.close();
+				}
+
+			}
+
 			if (!isListEmpty) {
-				switch (code) {
+				switch (key) {
 
 					default -> {
 						// No defaults!
@@ -412,7 +441,7 @@ public final class StageHome {
 			final var option = model.getSelectedItem();
 
 			// This one matters when the clients list is empty:
-			switch (code) {
+			switch (key) {
 
 				case END, PAGE_DOWN -> {
 					final var items = localListViewOptions.getItems();
@@ -558,31 +587,52 @@ public final class StageHome {
 		final var localListView = StageHome.listViewOptions;
 		final var localLabelOptionsList = StageHome.labelListOptions;
 
-		localListView.requestFocus();
-		localListView.getItems().addAll(OptionsHome.ORDER_UI);
-		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
-
 		localLabelOptionsList.setStyle("-fx-text-fill: gray;");
 
+		localListView.requestFocus();
 		localListView.setOnKeyPressed(p_event -> {
+			final var key = p_event.getCode();
+
+			final boolean alt = p_event.isAltDown();
+			final boolean meta = p_event.isMetaDown();
+			final boolean shift = p_event.isShiftDown();
+			final boolean ctrl = p_event.isControlDown();
+
+			final boolean onlyCtrl = ctrl && !(shift && alt || meta);
+			final boolean onlyShift = shift && !(ctrl || alt || meta);
+			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta);
+
 			final var clientSelections = StageHome.listViewClients.getSelectionModel();
 			final var optionSelections = StageHome.listViewOptions.getSelectionModel();
 
 			final var selectedItems = clientSelections.getSelectedItems();
 			final var selectedOption = optionSelections.getSelectedItem();
 
-			switch (p_event.getCode()) {
+			switch (key) {
 
 				case ENTER, SPACE ->
 					StageHome.onOptionSelection(selectedOption);
+
+				case ESCAPE -> {
+					StageHome.close();
+				}
 
 				default -> {
 					// No defaults!
 				}
 
+				case Q -> {
+					if (onlyCtrl)
+						App.exit(ExitCode.OKAY);
+				}
+
+				case W -> {
+					if (onlyCtrl)
+						StageHome.close();
+				}
+
 			}
 		});
-
 		localListView.setCellFactory(p_listView -> {
 			final var toRet = new ListCell<OptionsHome>() {
 
@@ -641,7 +691,8 @@ public final class StageHome {
 
 			return toRet;
 		});
-
+		localListView.getItems().addAll(OptionsHome.ORDER_UI);
+		localListView.setStyle("-fx-background-color: rgb(0, 0, 0);");
 		localListView.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			final boolean inFocus = p_newValue; // JavaFX ain't settin' it `null`!...
 			localLabelOptionsList.setStyle(inFocus

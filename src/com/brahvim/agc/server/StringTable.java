@@ -41,7 +41,7 @@ public final class StringTable {
 		try {
 			return new StringTable(p_file);
 		} catch (final FileNotFoundException e) {
-			e.printStackTrace();
+			System.err.printf("String table file `%s` not found.", p_file.getName());
 			return null;
 		}
 	}
@@ -129,8 +129,7 @@ public final class StringTable {
 			try (BufferedReader reader = new BufferedReader(new FileReader(this.file))) {
 				this.parse(reader);
 			} catch (final IOException e) {
-				System.err.println("Failed to read string table file!");
-				e.printStackTrace();
+				System.err.printf("Failed to read string table file `%s`!", this.file.getName());
 			}
 		}
 	}
@@ -155,11 +154,15 @@ public final class StringTable {
 			// and skip this iteration if they exist:
 			switch (line.charAt(0)) {
 
-				case ';': // Semicolons are also comments in INI files, apparently!
-				case '#':
-					continue;
+				case ';' -> {
+					// Semicolons are also comments in INI files, apparently!
+				}
 
-				case '[':
+				case '#' -> {
+					continue;
+				}
+
+				case '[' -> {
 					try { // NOSONAR!
 						section = line.substring(1, line.indexOf(']'));
 					} catch (final IndexOutOfBoundsException e) {
@@ -172,7 +175,7 @@ public final class StringTable {
 						);
 					}
 					continue;
-
+				}
 			}
 
 			// Find where the `=` sign is!:

@@ -70,11 +70,17 @@ public class DialogTrayMenu {
 				// No defaults!
 			}
 
-			case HOME -> StageHome.show();
+			case HOME -> {
+				StageHome.show();
+			}
 
-			case CLOSE -> App.exit(ExitCode.OKAY);
+			case CLOSE -> {
+				App.exit(ExitCode.OKAY);
+			}
 
-			case PROFILES -> StageProfiles.show();
+			case PROFILES -> {
+				StageProfiles.show();
+			}
 
 		}
 	}
@@ -91,7 +97,7 @@ public class DialogTrayMenu {
 		final var listViewItems = FXCollections.observableArrayList(OptionsTray.ORDER_UI);
 
 		final EventHandler<? super KeyEvent> cbckKeyPressExitOnEsc = p_event -> {
-			final KeyCode key = p_event.getCode();
+			final var key = p_event.getCode();
 
 			if (key != KeyCode.ESCAPE)
 				return;
