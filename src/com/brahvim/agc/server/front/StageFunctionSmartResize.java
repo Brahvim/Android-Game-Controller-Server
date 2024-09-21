@@ -4,7 +4,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.stage.Stage;
 
 @FunctionalInterface
-public interface StageSmartResizeFunction {
+public interface StageFunctionSmartResize {
 
 	public double find(Stage reference, Stage consumer);
 
@@ -19,8 +19,8 @@ public interface StageSmartResizeFunction {
 		// Derived from `p_reference`:
 		final Rectangle2D rectScreen = App.getMostCoveredScreen(p_reference).getVisualBounds();
 		final double stageMyWidth = p_toPosition.getWidth();
-		final double stageRefX = p_reference.getX();
 		final double screenHalf = rectScreen.getWidth() / 2;
+		final double stageRefX = p_reference.getX();
 
 		return stageRefX +
 				(screenHalf > stageRefX

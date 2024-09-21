@@ -5,6 +5,8 @@ import java.awt.event.MouseEvent;
 import com.brahvim.agc.server.ExitCode;
 
 import javafx.animation.FadeTransition;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.event.EventHandler;
 import javafx.scene.Cursor;
@@ -25,6 +27,32 @@ import javafx.util.Duration;
 
 public class DialogTrayMenu {
 
+	private static final class WindowTopStatusRemovalListener implements ChangeListener<Boolean> {
+
+		private WindowTopStatusRemovalListener() {
+		}
+
+		@Override
+		public void changed(
+
+				final ObservableValue<? extends Boolean> p_observable,
+				final Boolean p_oldValue,
+				final Boolean p_newValue
+
+		) {
+			if (!p_newValue.booleanValue())
+				return;
+
+			// `Stage` in `HeavyweightDialog`:
+			final var stage = (Stage) DialogTrayMenu.dialog.getDialogPane().getScene().getWindow();
+
+			stage.setAlwaysOnTop(false);
+			stage.alwaysOnTopProperty().removeListener(this);
+		}
+
+	}
+
+	private static final WindowTopStatusRemovalListener WINDOW_TOP_STATUS_REMOVAL_LISTENER = new WindowTopStatusRemovalListener();
 	static Dialog<Void> dialog;
 
 	private DialogTrayMenu() {
@@ -118,11 +146,13 @@ public class DialogTrayMenu {
 
 		localDialog.initStyle(StageStyle.UNDECORATED);
 		localDialog.initModality(Modality.APPLICATION_MODAL);
-		localDialog.setTitle(App.getWindowTitle("dialogTray"));
+		localDialog.setTitle(App.getWindowTitleString("dialogTray"));
 
 		stage.setWidth(400);
 		stage.setHeight(150);
-		stage.requestFocus();
+		// stage.requestFocus();
+		stage.setResizable(false);
+		localDialog.setResizable(false);
 		stage.getIcons().add(App.AGC_ICON_IMAGE);
 		stage.focusedProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			if (p_newValue.booleanValue())
@@ -216,8 +246,13 @@ public class DialogTrayMenu {
 		paneDialog.setContent(listView);
 
 		localDialog.show();
-		localDialog.setX(p_eventMouseAwt.getXOnScreen());
-		localDialog.setY(p_eventMouseAwt.getYOnScreen());
+
+		stage.setAlwaysOnTop(true);
+		stage.setX(p_eventMouseAwt.getXOnScreen());
+		stage.setY(p_eventMouseAwt.getYOnScreen());
+
+		// ...Should just work on all platforms without worrying about threading:
+		stage.alwaysOnTopProperty().addListener(DialogTrayMenu.WINDOW_TOP_STATUS_REMOVAL_LISTENER);
 	}
 
 }

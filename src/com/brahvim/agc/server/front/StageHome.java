@@ -263,13 +263,15 @@ public final class StageHome {
 		final var height = App.PRIMARY_SCREEN_HEIGHT / 4;
 
 		localStage.getIcons().add(App.AGC_ICON_IMAGE);
-		localStage.setTitle(App.getWindowTitle("stageHome"));
+		localStage.setTitle(App.getWindowTitleString("stageHome"));
 
 		localStage.setWidth(width);
 		localStage.setHeight(height);
 
 		localStage.setMinWidth(120);
 		localStage.setMinHeight(120);
+
+		localStage.setResizable(false);
 
 		localStage.setMaxWidth(App.PRIMARY_SCREEN_WIDTH);
 		localStage.setMaxHeight(App.PRIMARY_SCREEN_HEIGHT);

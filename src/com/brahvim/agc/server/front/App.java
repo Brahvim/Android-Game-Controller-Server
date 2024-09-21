@@ -16,6 +16,7 @@ import com.brahvim.agc.server.back.Client;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
@@ -32,7 +33,7 @@ public class App extends Application {
 
 	// region Fields.
 	public static final Font FONT_LARGE = new Font(18);
-	private static final Locale LOCALE = Locale.getDefault(); // Order matters!
+	public static final Locale LOCALE = Locale.getDefault(); // Order matters!
 	public static final Image AGC_ICON_IMAGE = App.loadAgcIcon();
 	public static final Screen PRIMARY_SCREEN = Screen.getPrimary();
 	public static final Object JAVAFX_APP_THREAD_LOCK = new Object();
@@ -43,14 +44,16 @@ public class App extends Application {
 	public static final Rectangle2D PRIMARY_SCREEN_RECT = App.PRIMARY_SCREEN.getBounds();
 	public static final double PRIMARY_SCREEN_WIDTH = App.PRIMARY_SCREEN_RECT.getWidth();
 	public static final double PRIMARY_SCREEN_HEIGHT = App.PRIMARY_SCREEN_RECT.getHeight();
-	public static final StageSmartResizeFunction SMARTLY_POSITION_STAGE_X = App.ON_MULTI_MONITOR_SETUP
-			? StageSmartResizeFunction::implMultiX
-			: StageSmartResizeFunction::implSingleX;
+	public static final StageFunctionSmartResize SMARTLY_POSITION_STAGE_X = App.ON_MULTI_MONITOR_SETUP
+			? StageFunctionSmartResize::implMultiX
+			: StageFunctionSmartResize::implSingleX;
 
-	public static final StageSmartResizeFunction SMARTLY_POSITION_STAGE_Y = App.ON_MULTI_MONITOR_SETUP
-			? StageSmartResizeFunction::implMultiY
-			: StageSmartResizeFunction::implSingleY;
+	public static final StageFunctionSmartResize SMARTLY_POSITION_STAGE_Y = App.ON_MULTI_MONITOR_SETUP
+			? StageFunctionSmartResize::implMultiY
+			: StageFunctionSmartResize::implSingleY;
 	// endregion
+
+	private static Application instance;
 
 	// region Static methods.
 	public static void smartlyPositionSecondOfStages(final Stage p_reference, final Stage p_toPosition) {
@@ -161,6 +164,10 @@ public class App extends Application {
 	}
 	// endregion
 
+	public static String getWindowTitleString(final String p_property) {
+		return App.STRINGS.getString("WindowTitles", p_property);
+	}
+
 	public static void centerOnPrimaryScreen(final Dialog<?> p_dialog) {
 		p_dialog.setX((App.PRIMARY_SCREEN_WIDTH - p_dialog.getWidth()) / 2);
 		p_dialog.setY((App.PRIMARY_SCREEN_HEIGHT - p_dialog.getHeight()) / 2);
@@ -173,21 +180,21 @@ public class App extends Application {
 
 	public static <EventT extends Event> void prependEventHandler(
 
-			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
+			final ObjectProperty<EventHandler<? super EventT>> p_eventProperty,
 			final EventHandler<? super EventT> p_toPrepend
 
 	) {
 		if (p_toPrepend == null)
 			return;
 
-		final EventHandler<? super EventT> registered = p_handlerProperty.get();
+		final EventHandler<? super EventT> registered = p_eventProperty.get();
 
 		if (registered == null) {
-			p_handlerProperty.set(p_toPrepend);
+			p_eventProperty.set(p_toPrepend);
 			return;
 		}
 
-		p_handlerProperty.set(p_event -> {
+		p_eventProperty.set(p_event -> {
 			p_toPrepend.handle(p_event);
 			registered.handle(p_event);
 		});
@@ -195,23 +202,67 @@ public class App extends Application {
 
 	public static <EventT extends Event> void appendEventHandler(
 
-			final ObjectProperty<EventHandler<? super EventT>> p_handlerProperty,
+			final ObjectProperty<EventHandler<? super EventT>> p_eventProperty,
 			final EventHandler<? super EventT> p_toAppend
 
 	) {
 		if (p_toAppend == null)
 			return;
 
-		final EventHandler<? super EventT> registered = p_handlerProperty.get();
+		final EventHandler<? super EventT> registered = p_eventProperty.get();
 
 		if (registered == null) {
-			p_handlerProperty.set(p_toAppend);
+			p_eventProperty.set(p_toAppend);
 			return;
 		}
 
-		p_handlerProperty.set(p_event -> {
+		p_eventProperty.set(p_event -> {
 			registered.handle(p_event);
 			p_toAppend.handle(p_event);
+		});
+	}
+
+	public static <PropertyValueT> void prependChangeListener(
+
+			final ObjectProperty<ChangeListener<? super PropertyValueT>> p_property,
+			final ChangeListener<? super PropertyValueT> p_toPrepend
+
+	) {
+		if (p_toPrepend == null)
+			return;
+
+		final ChangeListener<? super PropertyValueT> registered = p_property.get();
+
+		if (registered == null) {
+			p_property.set(p_toPrepend);
+			return;
+		}
+
+		p_property.set((p_observable, p_oldValue, p_newValue) -> {
+			p_toPrepend.changed(p_observable, p_oldValue, p_newValue);
+			registered.changed(p_observable, p_oldValue, p_newValue);
+		});
+	}
+
+	public static <PropertyValueT> void appendChangeListener(
+
+			final ObjectProperty<ChangeListener<? super PropertyValueT>> p_property,
+			final ChangeListener<? super PropertyValueT> p_toAppend
+
+	) {
+		if (p_toAppend == null)
+			return;
+
+		final ChangeListener<? super PropertyValueT> registered = p_property.get();
+
+		if (registered == null) {
+			p_property.set(p_toAppend);
+			return;
+		}
+
+		p_property.set((p_observable, p_oldValue, p_newValue) -> {
+			registered.changed(p_observable, p_oldValue, p_newValue);
+			p_toAppend.changed(p_observable, p_oldValue, p_newValue);
 		});
 	}
 
@@ -227,8 +278,8 @@ public class App extends Application {
 		EventQueue.invokeLater(AgcTrayIcon::getTrayIcon); // `SwingUtilities.invokeLater()` throws up :/
 	}
 
-	public static String getWindowTitle(final String p_property) {
-		return App.STRINGS.getString("WindowTitles", p_property);
+	public static void showUrl(final String p_url) {
+		App.getInstance().getHostServices().showDocument(p_url);
 	}
 
 	public static StringTable findStringTable() {
@@ -261,6 +312,10 @@ public class App extends Application {
 		return StringTable.tryCreating("./res/strings/en/agc-string-table.ini");
 	}
 
+	public static Application getInstance() {
+		return App.instance;
+	}
+
 	private static Image loadAgcIcon() {
 		try (final FileInputStream fis = new FileInputStream("./res/images/agc-icon-192.png")) {
 			return new Image(fis);
@@ -291,6 +346,7 @@ public class App extends Application {
 
 	@Override
 	public void start(final Stage p_stage) {
+		App.instance = this;
 		StageHome.init(p_stage);
 	}
 

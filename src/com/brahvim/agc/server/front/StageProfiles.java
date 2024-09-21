@@ -84,6 +84,7 @@ public final class StageProfiles {
 		Platform.runLater(StageProfiles::show);
 	}
 
+	// region Callbacks.
 	private static void onOptionSelection(final OptionsProfiles p_option) {
 		if (p_option == null)
 			return;
@@ -108,7 +109,7 @@ public final class StageProfiles {
 
 			case EXPORT -> {
 				final var chooser = new FileChooser();
-				final var strTitle = App.getWindowTitle("fileChooserProfileExporter");
+				final var strTitle = App.getWindowTitleString("fileChooserProfileExporter");
 
 				chooser.setTitle(strTitle);
 
@@ -136,7 +137,7 @@ public final class StageProfiles {
 			case IMPORT -> {
 				final var chooser = new FileChooser();
 				final var dirProfiles = new File("./res/profiles/");
-				final var strTitle = App.getWindowTitle("fileChooserProfileImporter");
+				final var strTitle = App.getWindowTitleString("fileChooserProfileImporter");
 				final var extensionFilter = new ExtensionFilter("Android Game Controller Profile INI File", "*.ini");
 
 				chooser.setTitle(strTitle);
@@ -189,6 +190,7 @@ public final class StageProfiles {
 		StageProfiles.listViewOptions.setPrefHeight(p_listHeight);
 		StageProfiles.listViewProfiles.setPrefHeight(p_listHeight);
 	}
+	// endregion
 
 	private static void init() {
 		final var localStage = StageProfiles.stage = new Stage();
@@ -255,8 +257,8 @@ public final class StageProfiles {
 		final double screenWidth = App.PRIMARY_SCREEN_WIDTH;
 		final double screenHeight = App.PRIMARY_SCREEN_HEIGHT;
 
-		final double width = screenWidth / 4;
 		final double height = screenHeight / 4;
+		final double width = screenWidth / 4;
 
 		localStage.setWidth(width);
 		localStage.setHeight(height);
@@ -264,12 +266,14 @@ public final class StageProfiles {
 		localStage.setMinWidth(120);
 		localStage.setMinHeight(120);
 
+		localStage.setResizable(false);
+
 		localStage.setMaxWidth(screenWidth);
 		localStage.setMaxHeight(screenHeight);
 
-		localStage.getIcons().add(App.AGC_ICON_IMAGE);
 		localStage.setScene(StageProfiles.scene);
-		localStage.setTitle(App.getWindowTitle("stageProfiles"));
+		localStage.getIcons().add(App.AGC_ICON_IMAGE);
+		localStage.setTitle(App.getWindowTitleString("stageProfiles"));
 
 		localStage.widthProperty().addListener((p_property, p_oldValue, p_newValue) -> {
 			StageProfiles.onListViewsWiden(p_newValue.doubleValue(), p_oldValue.doubleValue());
@@ -293,6 +297,7 @@ public final class StageProfiles {
 			final boolean shift = p_event.isShiftDown();
 			final boolean ctrl = p_event.isControlDown();
 
+			final boolean noMods = !(ctrl || shift || alt || meta);
 			final boolean onlyCtrl = ctrl && !(alt || meta || shift);
 			final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NO keys are active, nothing! (`0` px!)
 
@@ -313,6 +318,10 @@ public final class StageProfiles {
 					// No defaults!
 				}
 
+				case F1 -> {
+					if (noMods)
+						DialogHelp.show();
+				}
 				case F -> {
 					StageHome.show();
 					App.smartlyPositionSecondOfStages(StageProfiles.stage, StageHome.stage);
