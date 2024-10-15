@@ -17,15 +17,15 @@ public enum OptionsHome {
 	public final String TOOLTIP;
 
 	public static final OptionsHome[] ORDER_UI = new OptionsHome[] { // NOSONAR! Speed!
-		
-		ADD,
-		STOP,
-		REMOVE,
-		PROFILES,
-		CONTROLS,
-		
+
+			ADD,
+			REMOVE,
+			STOP,
+			CONTROLS,
+			PROFILES,
+
 	};
-	
+
 	private static final IdentityHashMap<String, OptionsHome> LABEL_ENUM_MAP = new IdentityHashMap<>();
 
 	static {
@@ -40,7 +40,7 @@ public enum OptionsHome {
 		this.TOOLTIP = App.STRINGS.getString("TooltipsHomeListOptions", myName);
 	}
 
-public static OptionsHome valueOfLabel(final String p_label) {
+	public static OptionsHome valueOfLabel(final String p_label) {
 		return OptionsHome.LABEL_ENUM_MAP.get(p_label);
 	}
 	// endregion

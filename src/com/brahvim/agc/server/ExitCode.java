@@ -5,6 +5,9 @@ public enum ExitCode {
 	OKAY("User exited app."),
 	UNKNOWN("Unknown <:(..."),
 
+	UDP_SOCKET_CREATION_PERMISSION("UDP socket creation not allowed."),
+	UDP_SOCKET_ACCEPT_PERMISSION("UDP socket not allowed to accept connections."),
+
 	SSL_SOCKET_CREATION_PERMISSION("SSL socket creation not allowed."),
 	SSL_SOCKET_ACCEPT_PERMISSION("SSL socket not allowed to accept connections."),
 

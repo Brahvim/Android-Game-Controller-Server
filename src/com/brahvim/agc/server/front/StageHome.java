@@ -19,7 +19,6 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -27,7 +26,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-@SuppressWarnings("unused")
 public final class StageHome {
 
 	// TODO: Number keys as shortcuts? SCROLLING to go through `ListView`s?!
@@ -59,43 +57,46 @@ public final class StageHome {
 		});
 	}
 
-	private static void cbckKeyPressedForUndo(final KeyEvent p_event) {
-		final var key = p_event.getCode();
-		final boolean alt = p_event.isAltDown();
-		final boolean meta = p_event.isMetaDown();
-		final boolean shift = p_event.isShiftDown();
-		final boolean ctrl = p_event.isControlDown();
-
-		final boolean onlyCtrl = ctrl && !(alt || meta || shift);
-		final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NO keys are active, nothing! (`0` px!)
-		// FIXME: If typing is buggy, check *this out!:*
-
-		switch (key) {
-
-			default -> {
-				// No defaults!
-			}
-
-			case Y -> {
-				if (!onlyCtrl)
-					return;
-
-				System.out.println("`Ctrl` + `Y` seen.");
-			}
-
-			case Z -> {
-				if (!ctrl)
-					return;
-
-				if (onlyCtrl)
-					System.out.println("`Ctrl` + `Z` seen.");
-
-				if (shift)
-					System.out.println("`Ctrl` + `Shift` + `Z` seen.");
-			}
-
-		}
-	}
+	/*
+	 * private static void cbckKeyPressedForUndo(final KeyEvent p_event) {
+	 * final var key = p_event.getCode();
+	 * final boolean alt = p_event.isAltDown();
+	 * final boolean meta = p_event.isMetaDown();
+	 * final boolean shift = p_event.isShiftDown();
+	 * final boolean ctrl = p_event.isControlDown();
+	 * 
+	 * final boolean onlyCtrl = ctrl && !(alt || meta || shift);
+	 * final boolean onlyShiftCtrl = ctrl && shift && !(alt || meta); // If NO keys
+	 * are active, nothing! (`0` px!)
+	 * // FIXME: If typing is buggy, check *this out!:*
+	 * 
+	 * switch (key) {
+	 * 
+	 * default -> {
+	 * // No defaults!
+	 * }
+	 * 
+	 * case Y -> {
+	 * if (!onlyCtrl)
+	 * return;
+	 * 
+	 * System.out.println("`Ctrl` + `Y` seen.");
+	 * }
+	 * 
+	 * case Z -> {
+	 * if (!ctrl)
+	 * return;
+	 * 
+	 * if (onlyCtrl)
+	 * System.out.println("`Ctrl` + `Z` seen.");
+	 * 
+	 * if (shift)
+	 * System.out.println("`Ctrl` + `Shift` + `Z` seen.");
+	 * }
+	 * 
+	 * }
+	 * }
+	 */
 
 	// region If I'm not submitting this to an API, `on*()`. Else `cbck*()`.
 	private static void onListViewsWiden(final double p_newValue, final double p_oldValue) {
@@ -154,13 +155,12 @@ public final class StageHome {
 
 			case REMOVE -> {
 				App.LIST_CLIENTS_WAITING.removeIf(selections::contains);
+				items.removeAll(selections);
 
 				for (final var c : selections)
 					c.destroy();
 
-				items.removeAll(selections);
 				StageHome.listViewClients.getSelectionModel().clearSelection();
-				// optionSelections.clearSelection();
 
 				if (App.LIST_CLIENTS_WAITING.isEmpty())
 					Backend.INT_CLIENTS_LEFT.set(0);
@@ -288,9 +288,8 @@ public final class StageHome {
 
 	private static void initRootPane() {
 		final var localPaneRoot = StageHome.paneRoot;
-		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Repeated 9 times, but it's CSS!
 
-		App.prependEventHandler(localPaneRoot.onKeyPressedProperty(), p_event -> {
+		localPaneRoot.setOnKeyPressed(p_event -> {
 			final var key = p_event.getCode();
 			final boolean alt = p_event.isAltDown();
 			final boolean meta = p_event.isMetaDown();
@@ -353,19 +352,12 @@ public final class StageHome {
 
 			final var localLabelClients = StageHome.labelListClients;
 			final var localListViewClients = StageHome.listViewClients;
-
-			// final var localLabelOptions = JavaFxApp.labelForOptionsList;
-			// final var localListViewOptions = JavaFxApp.listViewForOptions;
-
 			final double widthOfClientElements = localLabelClients.getPrefWidth() + velocity;
 
 			localLabelClients.setPrefWidth(widthOfClientElements);
 			localListViewClients.setPrefWidth(widthOfClientElements);
 		});
-	}
-
-	private static void initTrayIcon() {
-
+		localPaneRoot.setStyle("-fx-background-color: rgb(0, 0, 0);"); // NOSONAR! Repeated 9 times, but it's CSS!
 	}
 
 	@SuppressWarnings("unchecked")
@@ -708,8 +700,8 @@ public final class StageHome {
 
 	private static void initSeparatorButton() {
 		final var localLabelClients = StageHome.labelListClients;
-		final var localListViewClients = StageHome.listViewClients;
 		final var localButtonSeparator = StageHome.buttonSeparator;
+		final var localListViewClients = StageHome.listViewClients;
 
 		localButtonSeparator.setFocusTraversable(false);
 		localButtonSeparator.setCursor(Cursor.OPEN_HAND);
@@ -747,5 +739,4 @@ public final class StageHome {
 			});
 		});
 	}
-
 }

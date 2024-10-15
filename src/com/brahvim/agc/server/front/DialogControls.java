@@ -15,19 +15,19 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-public final class DialogHelp {
+public class DialogControls {
 
 	private static Dialog<Void> dialog;
 
-	private DialogHelp() {
+	private DialogControls() {
 		throw new IllegalAccessError();
 	}
 
 	public static void show() {
-		if (DialogHelp.dialog != null)
+		if (DialogControls.dialog != null)
 			return;
 
-		final var localDialog = DialogHelp.dialog = DialogHelp.init();
+		final var localDialog = DialogControls.dialog = DialogControls.init();
 		final DialogPane paneDialog = localDialog.getDialogPane();
 
 		localDialog.show();
@@ -67,14 +67,14 @@ public final class DialogHelp {
 	private static Dialog<Void> init() {
 		final var localDialog = new Dialog<Void>();
 		final var paneDialog = localDialog.getDialogPane();
-		final var paneRoot = new VBox(DialogHelp.createLabels());
+		final var paneRoot = new VBox(DialogControls.createLabels());
 
 		final var stageDialog = ((Stage) paneDialog.getScene().getWindow());
 		stageDialog.getIcons().add(App.AGC_ICON_IMAGE);
 
 		localDialog.setResizable(false);
 		localDialog.setOnCloseRequest(p_event -> {
-			DialogHelp.dialog = null;
+			DialogControls.dialog = null;
 		});
 		// localDialog.initStyle(StageStyle.UNDECORATED);
 		localDialog.initModality(Modality.APPLICATION_MODAL);
@@ -114,7 +114,7 @@ public final class DialogHelp {
 	private static Label[] createLabels() {
 		final Label[] toRet = {
 
-				new Label(DialogHelp.getString("label0")) //
+				new Label(DialogControls.getString("label0")) //
 				, new Label() //
 
 		};
@@ -127,9 +127,9 @@ public final class DialogHelp {
 		{ // region `toRet[1]`.
 			final var label = toRet[1];
 			label.setCursor(Cursor.HAND);
-			label.setOnMouseClicked(p_event -> DialogHelp.showUrl("urlGitHub"));
+			label.setOnMouseClicked(p_event -> DialogControls.showUrl("urlGitHub"));
 
-			final var text = new Text(DialogHelp.getString("label1"));
+			final var text = new Text(DialogControls.getString("label1"));
 			text.setFill(Color.web("#007BFF"));
 			text.setFont(App.FONT_LARGE);
 			text.setUnderline(true);
@@ -141,11 +141,11 @@ public final class DialogHelp {
 	}
 
 	private static String getString(final String p_property) {
-		return App.STRINGS.getString("DialogAbout", p_property);
+		return App.STRINGS.getString("DialogControls", p_property);
 	}
 
 	private static void showUrl(final String p_url) {
-		App.showUrl(DialogHelp.getString(p_url));
+		App.showUrl(DialogControls.getString(p_url));
 	}
 
 }

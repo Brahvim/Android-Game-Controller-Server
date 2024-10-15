@@ -12,7 +12,8 @@ import com.brahvim.agc.server.front.App;
 public final class Profile {
 
 	// region Fields.
-	public static final ArrayList<Profile> LIST_ALL = new ArrayList<>(); // NOSONAR, there's a reason why it exists...
+	protected static final ArrayList<Integer> LIST_ALL = new ArrayList<>();
+	protected static final ArrayList<Integer> LIST_ACTIVE = new ArrayList<>();
 
 	private static final ArrayList<File> LIST_FILES = new ArrayList<>();
 	private static final ArrayList<String> LIST_DATA = new ArrayList<>();
@@ -30,8 +31,8 @@ public final class Profile {
 	}
 
 	public Profile(final File p_file) throws IOException {
-		Profile.LIST_ALL.add(this);
 		this.id = Profile.create();
+		Profile.LIST_ALL.add(this.id);
 
 		final StringBuilder builder = new StringBuilder();
 
@@ -47,24 +48,24 @@ public final class Profile {
 		this.setName(String.format("Profile %d", Profile.count));
 	}
 
-	public String getData() {
-		return Profile.LIST_DATA.get(this.id);
-	}
-
 	public File getFile() {
 		return Profile.LIST_FILES.get(this.id);
+	}
+
+	public String getData() {
+		return Profile.LIST_DATA.get(this.id);
 	}
 
 	public String getName() {
 		return Profile.LIST_NAMES.get(this.id);
 	}
 
-	public String setData(final String p_data) {
-		return Profile.LIST_DATA.set(this.id, p_data);
-	}
-
 	public File setFile(final File p_file) {
 		return Profile.LIST_FILES.set(this.id, p_file);
+	}
+
+	public String setData(final String p_data) {
+		return Profile.LIST_DATA.set(this.id, p_data);
 	}
 
 	public String setName(final String p_name) {
@@ -72,7 +73,8 @@ public final class Profile {
 	}
 
 	public synchronized void destroy() {
-		Profile.LIST_ALL.remove(this);
+		Profile.LIST_ALL.remove(this.id);
+		Profile.LIST_ACTIVE.remove(this.id);
 		Profile.LIST_DATA.set(this.id, null);
 
 		Profile.QUEUE_FREE_INDICES.add(this.id);
