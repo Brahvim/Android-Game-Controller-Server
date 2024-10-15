@@ -142,20 +142,18 @@ public final class StageHome {
 
 			case STOP -> {
 				Backend.INT_CLIENTS_LEFT.set(0);
+				items.removeAll(App.LIST_CLIENTS_WAITING);
 
-				for (final var c : App.LIST_CLIENTS_WAITING) {
-					items.remove(c);
+				for (final var c : App.LIST_CLIENTS_WAITING)
 					c.destroy();
-				}
 
 				App.LIST_CLIENTS_WAITING.clear();
-
 				System.out.println("Now awaiting no clients.");
 			}
 
 			case REMOVE -> {
-				App.LIST_CLIENTS_WAITING.removeIf(selections::contains);
 				items.removeAll(selections);
+				App.LIST_CLIENTS_WAITING.removeIf(selections::contains);
 
 				for (final var c : selections)
 					c.destroy();

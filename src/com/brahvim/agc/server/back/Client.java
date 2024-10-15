@@ -27,9 +27,9 @@ public final class Client {
 	private static int countUiEntries = 1;
 	private static int countClient = 1;
 
-	private int idSocketSsl = 0;
-	private int idUiEntry = 0;
-	private int idClient = 0;
+	private Integer idSocketSsl = 0;
+	private Integer idUiEntry = 0;
+	private Integer idClient = 0;
 	// endregion
 
 	static {
@@ -76,7 +76,7 @@ public final class Client {
 	// endregion
 
 	// region Setters.
-	public String setUiEntry(final String p_entry) {
+	public synchronized String setUiEntry(final String p_entry) {
 		if (this.idUiEntry == 0)
 			this.createUiEntry();
 
